@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="test" />
+        <title>Output</title>
+    </head>
+    <body>
+        <header>
+            <a href="/">Go back home</a>
+        </header>
+        <div class="content">
+            <table class="patients">
+                <thead>
+                    <tr>
+                        <th>patientId</td>
+                        <th>operator</td>
+                        <th>Analysis</th>
+                    </tr>
+                </thead>
+                <tbody style="vertical-align: top;">
+                    <% var color = false %>
+                    <% Object.entries(patients).forEach( ([id,patient]) => { %>
+                        <%- include('./overview_patient', {patient: patient, backgroundColor: (color?'lightgray':'lightsteelblue') } ) %>
+                        <% color = !color %>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>

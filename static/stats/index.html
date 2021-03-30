@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link href="Chart.min.css" rel="stylesheet" />
+</head>
+
+<body>
+
+
+<h1>Iclus 2021 data-set platform</h1>
+
+<form action="api/stats" method="get" name="queryform" id="queryform">
+
+  <span>Main Grouping: </span>&emsp;
+  <input type='radio' name="mainLabel" checked id="mainLabelByDepth" value="depth"/>
+  <span>groupByDepth</span>&emsp;
+  <input type='radio' name="mainLabel" id="mainLabelByFrequency" value="frequency"/>
+  <span>groupByFrequency</span>&emsp;
+  <input type='radio' name="mainLabel" id="mainLabelByPixelDensity" value="pixel_density"/>
+  <span>groupByPixelDensity</span>&emsp;
+  <input type='radio' name="mainLabel" id="mainLabelByStructure" value="structure"/>
+  <span>groupByStructure</span>
+
+  <hr/>
+
+  <span>First Stack: </span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="disabled"/>
+  <span>disable</span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="none"/>
+  <span>stackByNone(=Total)</span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="depth"/>
+  <span>stackByDepth</span>&emsp;
+  <input type='radio' name="firstStackingLabel" checked value="frequency"/>
+  <span>stackByFrequency</span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="pixel_density"/>
+  <span>stackByPixelDensity</span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="structure"/>
+  <span>stackByStructure</span>
+  <br/>
+  <span>Substack: </span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" value="disabled"/>
+  <span>disabled</span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" value="depth"/>
+  <span>substackByDepth</span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" value="frequency"/>
+  <span>substackByFrequency</span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" checked value="pixel_density"/>
+  <span>substackByPixelDensity</span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" value="structure"/>
+  <span>substackByStructure</span>
+  <br/>
+  <label name="firstStackPlottingValue">Plot # of:</label>
+  <select name="firstStackPlottingValue" id="firstStackPlottingValue">
+    <option value="number_of_frames" selected>frames</option>
+    <option value="number_of_analyses">analyses</option>
+    <option value="number_of_patients">patients</option>
+    <option value="number_of_operators">operators</option>
+  </select>
+
+  <hr/>
+
+  <span>Second Stack: </span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="disabled"/>
+  <span>disable</span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="none"/>
+  <span>stackByNone(=Total)</span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="depth"/>
+  <span>stackByDepth</span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="frequency"/>
+  <span>stackByFrequency</span>&emsp;
+  <input type='radio' name="secondStackingLabel" checked value="pixel_density"/>
+  <span>stackByPixelDensity</span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="structure"/>
+  <span>stackByStructure</span>
+  <br/>
+  <span>Substack: </span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" value="disabled"/>
+  <span>disabled</span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" value="depth"/>
+  <span>substackByDepth</span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" value="frequency"/>
+  <span>substackByFrequency</span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" checked value="pixel_density"/>
+  <span>substackByPixelDensity</span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" value="structure"/>
+  <span>substackByStructure</span>
+  <br/>
+  <label for="secondStackPlottingValue">Plot # of:</label>
+  <select name="secondStackPlottingValue" id="secondStackPlottingValue">
+    <option value="number_of_frames">frames</option>
+    <option value="number_of_analyses">analyses</option>
+    <option value="number_of_patients" selected>patients</option>
+    <option value="number_of_operators">operators</option>
+  </select>
+  
+  <hr/>
+
+  <!-- <input type='checkbox' name="groupByDepth" checked id="groupByDepth"/>
+  <span>groupByDepth</span>&emsp;
+  <input type='checkbox' name="groupByFrequency" checked id="groupByFrequency"/>
+  <span>groupByFrequency</span>&emsp;
+  <input type='checkbox' name="groupByPixelDensity" id="groupByPixelDensity"/>
+  <span>groupByPixelDensity</span>&emsp;
+  <input type='checkbox' name="groupByStructure" id="groupByStructure"/>
+  <span>groupByStructure</span> -->
+  
+  <br/>
+  <span>roundDepthBy:</span>&ensp;
+  <input name="roundDepthBy" value=60 id="roundDepthBy"/>
+  <span>roundFrequencyBy:</span>&ensp;
+  <input name="roundFrequencyBy" value=4 id="roundFrequencyBy"/>
+  <span>roundPixelDensityBy:</span>&ensp;
+  <input name="roundPixelDensityBy" value=40 id="roundPixelDensityBy"/>
+
+  <br/>
+  <button type="button" onclick="refresh()">Update</button>
+
+</form>
+
+<hr/>
+
+<canvas id="myChart" width="400" height="200"></canvas>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="Chart.min.js"></script>
+
+
+
+<script>
+
+
+
+var ctx = document.getElementById('myChart').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [],
+        datasets: []
+    },
+    options: {
+        title: {
+            display: true,
+            text: 'Data distribution'
+        },
+        scales: {
+            xAxes: [{
+              scaleLabel: {
+                display: true,
+                labelString: '',
+              },
+              stacked: true
+            }],
+            yAxes: [
+            {
+              scaleLabel: {
+                display: true,
+                labelString: '# of frames',
+              },
+              id: 'left-y-axis',
+              ticks: {
+                  beginAtZero: true
+              },
+              stacked: true,
+              type: 'linear'
+            },
+            {
+              scaleLabel: {
+                display: true,
+                labelString: '# of patients',
+              },
+              id: 'right-y-axis',
+              position: 'right',
+              ticks: {
+                  beginAtZero: true
+              },
+              stacked: true,
+              type: 'linear'
+            }]
+        }
+    }
+});
+
+
+
+async function callStats({groupBy}) {
+  
+  // var query_res = [{"depth_grouped":320,"frequency_grouped":4,"number_of_frames":1400,"number_of_files":"14","number_of_analyses":"2","number_of_patients":"2","number_of_operator":"1","operators":[1001]},{"depth_grouped":240,"frequency_grouped":4,"number_of_frames":3900,"number_of_files":"39","number_of_analyses":"4","number_of_patients":"3","number_of_operator":"2","operators":[1001,1206]},{"depth_grouped":160,"frequency_grouped":6,"number_of_frames":35,"number_of_files":"1","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1001]},{"depth_grouped":160,"frequency_grouped":4,"number_of_frames":32959,"number_of_files":"324","number_of_analyses":"28","number_of_patients":"28","number_of_operator":"3","operators":[1001,1014,1206]},{"depth_grouped":120,"frequency_grouped":null,"number_of_frames":12194,"number_of_files":"76","number_of_analyses":"7","number_of_patients":"7","number_of_operator":"1","operators":[1001]},{"depth_grouped":120,"frequency_grouped":6,"number_of_frames":33336,"number_of_files":"148","number_of_analyses":"17","number_of_patients":"15","number_of_operator":"3","operators":[1001,1014,1255]},{"depth_grouped":120,"frequency_grouped":4,"number_of_frames":63303,"number_of_files":"354","number_of_analyses":"36","number_of_patients":"34","number_of_operator":"2","operators":[1014,1255]},{"depth_grouped":80,"frequency_grouped":null,"number_of_frames":10740,"number_of_files":"67","number_of_analyses":"6","number_of_patients":"5","number_of_operator":"1","operators":[1001]},{"depth_grouped":80,"frequency_grouped":6,"number_of_frames":192712,"number_of_files":"812","number_of_analyses":"65","number_of_patients":"49","number_of_operator":"3","operators":[1001,1014,1255]},{"depth_grouped":80,"frequency_grouped":4,"number_of_frames":85268,"number_of_files":"625","number_of_analyses":"58","number_of_patients":"58","number_of_operator":"4","operators":[1001,1014,1206,1255]},{"depth_grouped":80,"frequency_grouped":2,"number_of_frames":126,"number_of_files":"1","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1014]},{"depth_grouped":40,"frequency_grouped":10,"number_of_frames":552,"number_of_files":"3","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1255]},{"depth_grouped":40,"frequency_grouped":6,"number_of_frames":1040,"number_of_files":"5","number_of_analyses":"3","number_of_patients":"3","number_of_operator":"2","operators":[1001,1014]}];
+  let queries = []
+  // if ($('#groupByDepth')[0].checked)
+    // queries.push('groupBy=depth')
+  // if ($('#groupByFrequency')[0].checked)
+    // queries.push('groupBy=frequency')
+  // if ($('#groupByPixelDensity')[0].checked)
+    // queries.push('groupBy=pixel_density')
+  // if ($('#groupByStructure')[0].checked)
+    // queries.push('groupBy=structure')
+
+  for (field of groupBy) {
+    if(field=="depth")
+      queries.push('groupBy=depth')
+    else if(field=="frequency")
+      queries.push('groupBy=frequency')
+    else if(field=="pixel_density")
+      queries.push('groupBy=pixel_density')
+    else if(field=="structure")
+      queries.push('groupBy=structure')
+  }
+  
+  if ($('#roundDepthBy')[0].value!="null") queries.push('roundDepthBy='+$('#roundDepthBy')[0].value)
+  if ($('#roundFrequencyBy')[0].value!="null") queries.push('roundFrequencyBy='+$('#roundFrequencyBy')[0].value)
+  if ($('#roundPixelDensityBy')[0].value!="null") queries.push('roundPixelDensityBy='+$('#roundPixelDensityBy')[0].value)
+
+  return query_res = await fetch('../api/stats?'+queries.join('&'))
+    .then((resp) => resp.json()) // Transform the data into json
+    .catch( error => console.error(error) ); // If there is any error you will catch them here
+}
+
+
+
+/**
+ * This function replot the graph
+ */
+ async function refresh() {
+
+  var query_res = await callStats({groupBy: ['depth', 'frequency', 'pixel_density', 'structure']});
+
+  let labels = {
+    depth: [],
+    frequency: [],
+    pixel_density: [],
+    structure: []
+  }
+  let {depth, frequency, pixel_density, structure} = labels;
+  for (row of query_res) {
+    for ( let [keys,values] of Object.entries(labels) ) {
+      if ( !values.includes(row[keys]) )
+        values.push(row[keys])
+    }
+  }
+  for ( let [keys,values] of Object.entries(labels) ) {
+    values.sort((a,b)=>a - b)
+  }
+
+  
+
+  myChart.data.datasets = [];
+  var datasets = myChart.data.datasets;
+  
+
+
+  // flat dataset for total
+  async function populateDataset(mainField, stackIndex, number_of='number_of_frames' , yAxisID='left-y-axis') {
+      
+      var mainLabels = labels[mainField]
+      
+      var query_res = await callStats({groupBy: [mainField]});
+
+      // let mainLabels = [];
+      // for ( row of query_res ) {
+      //   if ( !mainLabels.includes(row[mainField]) )
+      //     mainLabels.push(row[mainField]);
+      // }
+      // mainLabels.sort((a,b)=>a - b)
+
+      let label = 'total '+number_of
+
+      let data = []
+      for (let mainLabel of mainLabels) {
+        let value = 0;
+        for (row of query_res) {
+          if (row[mainField]==mainLabel) {
+              value = new Number(row[number_of])
+              break;
+          }
+        }
+        data.push(value)
+      }
+
+      datasets.push({
+        label,
+        data,
+        borderWidth: 1,
+        stack: stackIndex
+      });
+  }
+
+  // stacked datasets
+  async function populateStackDataset(mainField, stackField, stackIndex, number_of='number_of_frames' , yAxisID='left-y-axis') {
+    
+    var mainLabels = labels[mainField]
+    var stackLabels = labels[stackField]
+
+    var query_res = await callStats({groupBy: [mainField, stackField]});
+
+    // let mainLabels = [];
+    // let stackLabels = [];
+    // for ( row of query_res ) {
+    //   if ( !mainLabels.includes(row[mainField]) )
+    //     mainLabels.push(row[mainField]);
+    //   if ( !stackLabels.includes(row[stackField]) )
+    //     stackLabels.push(row[stackField]);
+    // }
+    // mainLabels.sort((a,b)=>a - b)
+    // stackLabels.sort((a,b)=>a - b)
+    
+    for (let stackLabel of stackLabels) {
+      let label = number_of+' given '+stackField+'='+stackLabel
+
+      let data = [];
+      for (let mainLabel of mainLabels) {
+        let value = 0;
+        for (row of query_res) {
+          if (row[mainField]==mainLabel && row[stackField]==stackLabel ) {
+            value = new Number(row[number_of])
+            break;
+          }
+        }
+        data.push(value)
+      }
+
+      datasets.push({
+        label,
+        data,
+        backgroundColor: rainbow(stackLabels.length, stackLabels.indexOf(stackLabel), 0.5 ),
+        // borderColor: borderColors[stackingLabels.indexOf(stackValue)],
+        borderWidth: 1,
+        stack: stackIndex,
+        yAxisID: yAxisID
+      });
+
+    }
+
+  }
+
+  // super stacked datasets
+  async function populateSubstackDataset(mainField, stackField, substackField, stackIndex, number_of='number_of_frames' , yAxisID='left-y-axis') {
+    
+    var mainLabels = labels[mainField]
+    var stackLabels = labels[stackField]
+    var substackLabels = labels[substackField]
+
+    var query_res = await callStats({groupBy: [mainField, stackField, substackField]});
+
+    // let mainLabels = [];
+    // let stackLabels = [];
+    // let substackLabels = [];
+    // for ( row of query_res ) {
+    //   if ( !mainLabels.includes(row[mainField]) )
+    //     mainLabels.push(row[mainField]);
+    //   if ( !stackLabels.includes(row[stackField]) )
+    //     stackLabels.push(row[stackField]);
+    //   if ( !substackLabels.includes(row[substackField]) )
+    //   substackLabels.push(row[substackField]);
+    // }
+    // mainLabels.sort((a,b)=>a - b)
+    // stackLabels.sort((a,b)=>a - b)
+    // substackLabels.sort((a,b)=>a - b)
+
+    for (let stackLabel of stackLabels) {
+      for (let subStackLabel of substackLabels) {
+
+        let label = number_of+' given '+stackField+'='+stackLabel+' & '+substackField+'='+subStackLabel
+        
+        let data = []
+        for (let mainLabel of mainLabels) {
+          let value = 0;
+          for (row of query_res) {
+            if (row[mainField]==mainLabel && row[stackField]==stackLabel && row[substackField]==subStackLabel ) {
+                value = new Number(row[number_of])
+                break;
+            }
+          }
+          data.push(value)
+        }
+
+        datasets.push({
+          label,
+          data,
+          backgroundColor: rainbow( stackLabels.length, stackLabels.indexOf(stackLabel), 0.5),
+          borderColor: rainbow( substackLabels.length*2, substackLabels.indexOf(subStackLabel)*2+1 ),
+          borderSkipped: '',
+          borderWidth: 2,
+          stack: stackIndex,
+          yAxisID: yAxisID
+        });
+
+      }
+    }
+
+  }
+
+  let mainLabel = $('input[name="mainLabel"]:checked').val()
+  let firstStackingLabel = $('input[name="firstStackingLabel"]:checked').val()
+  let firstSubstackingLabel = $('input[name="firstSubStackingLabel"]:checked').val()
+  let secondStackingLabel = $('input[name="secondStackingLabel"]:checked').val()
+  
+  let firstStackPlotting = $('#firstStackPlottingValue')[0].options[$('#firstStackPlottingValue')[0].selectedIndex].value
+  let secondStackPlotting = $('#secondStackPlottingValue')[0].options[$('#secondStackPlottingValue')[0].selectedIndex].value
+
+  if (firstStackingLabel!='disabled')
+    if (firstSubstackingLabel=='disabled')
+      await populateStackDataset(mainLabel, firstStackingLabel, 1, firstStackPlotting);
+    else
+      await populateSubstackDataset(mainLabel, firstStackingLabel, firstSubstackingLabel, 2, firstStackPlotting);
+
+  if (secondStackingLabel=='none')
+    await populateDataset(mainLabel, labels[mainLabel], 4, secondStackPlotting, 'right-y-axis');
+  else if (secondStackingLabel!='disabled') {
+    await populateStackDataset(mainLabel, secondStackingLabel, 4, secondStackPlotting, 'right-y-axis');
+  }
+
+  
+  // total
+  // {
+  //   let label = 'total # of frames'
+  //   let data = []
+
+  //   for (let mainValue of mainLabels) {
+  //     let sum = 0;
+  //     for (row of query_res)
+  //       if (row[mainLabel]==mainValue)
+  //           sum += row.number_of_frames
+  //     data.push(sum)
+  //   }
+      
+  //   datasets.push({
+  //     label,
+  //     data,
+  //     borderWidth: 1,
+  //     stack: 0
+  //   });
+  // }
+  // {
+  //   let label = 'total # of patients'
+  //   let data = []
+
+  //   for (let mainValue of mainLabels) {
+  //     let sum = 0;
+  //     for (row of query_res)
+  //       if (row[mainLabel]==mainValue)
+  //           sum += new Number(row.number_of_patients)
+  //     data.push(sum)
+  //   }
+      
+  //   datasets.push({
+  //     label,
+  //     data,
+  //     borderWidth: 1,
+  //     stack: 10,
+  //     yAxisID: 'second-y-axis'
+  //   });
+  // }
+
+  myChart.data.labels = labels[mainLabel]
+  myChart.data.datasets = datasets
+  myChart.options.scales.xAxes[0].scaleLabel.labelString = mainLabel
+  myChart.update();
+
+}
+$(document).ready(function(){
+  refresh();
+})
+
+
+
+function rainbow(numOfSteps, step, a=1) {
+    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
+    // Adam Cole, 2011-Sept-14
+    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+    var r, g, b;
+    var h = step / numOfSteps;
+    var i = ~~(h * 6);
+    var f = h * 6 - i;
+    var q = 1 - f;
+    switch(i % 6){
+        case 0: r = 1; g = f; b = 0; break;
+        case 1: r = q; g = 1; b = 0; break;
+        case 2: r = 0; g = 1; b = f; break;
+        case 3: r = 0; g = q; b = 1; break;
+        case 4: r = f; g = 0; b = 1; break;
+        case 5: r = 1; g = 0; b = q; break;
+    }
+    r = (~ ~(r * 255))
+    g = (~ ~(g * 255))
+    b = (~ ~(b * 255))
+    var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+    return ('rgba('+r+', '+g+', '+b+', '+a+')');
+}
+
+
+
+</script>
+
+</body>
+
+</html>
