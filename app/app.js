@@ -184,11 +184,13 @@ app.get('/api/stats', async function(req, res) {
   if (groupByStructure)     GROUP_BY.push(`structure`)
   
   let ORDER_BY = [];
-  for (let gp of req.query.groupBy)
+  let groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
+  for (let gp of groupBy){
     if      (gp=='depth')         ORDER_BY.push(`depth ASC`)
     else if (gp=='frequency')     ORDER_BY.push(`frequency ASC`)
     else if (gp=='pixel_density') ORDER_BY.push(`pixel_density ASC`)
     else if (gp=='structure')     ORDER_BY.push(`structure ASC`)
+  }
 
   let my_query = `
 SELECT
@@ -212,11 +214,13 @@ FROM
     analysis_status
   FROM
     app_file_flat
+  WHERE
+    frames IS NOT NULL
 ) AS app_file_flat_rounded
 
-WHERE
-depth IS NOT NULL AND
-analysis_status = 2
+--WHERE
+--depth IS NOT NULL AND
+--analysis_status = 2
 
 GROUP BY
 ${GROUP_BY.join(',\n')}
@@ -227,6 +231,44 @@ ${ORDER_BY.join(',\n')}
   `;
 
   console.log(my_query);
+
+
+  
+  let new_query = `
+  SELECT
+    MAX (count_pixel_density) count_pixel_density,
+    MAX (count_depth) count_depth,
+    array_pixel_density,
+    array_depth,
+    SUM (number_of_frames) AS number_of_frames,
+    SUM (number_of_files) AS number_of_files,
+    SUM (number_of_analyses) AS number_of_analyses
+
+  FROM
+    (
+      SELECT 
+        COUNT (DISTINCT ROUND ( pixel_density/40 )*40) AS count_pixel_density,
+        COUNT (DISTINCT ROUND ( depth/20 )*20) AS count_depth,
+        ARRAY_AGG (DISTINCT ROUND ( pixel_density/40 )*40) AS array_pixel_density,
+        ARRAY_AGG (DISTINCT ROUND ( depth/20 )*20) AS array_depth,
+        SUM (frames) AS number_of_frames,
+        COUNT (file_id) AS number_of_files,
+        COUNT (DISTINCT analysis_id) AS number_of_analyses
+      FROM
+        app_file_flat
+      WHERE
+        --depth IS NOT NULL AND
+        analysis_status = 2
+      GROUP BY
+        analysis_id
+      
+    ) AS app_file_rounded
+    
+  GROUP BY
+    array_pixel_density,
+    array_depth
+  `
+
 
   let esempio = `
     SELECT

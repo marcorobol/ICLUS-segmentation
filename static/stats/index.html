@@ -61,7 +61,7 @@
   <hr/>
 
   <span>Second Stack: </span>&emsp;
-  <input type='radio' name="secondStackingLabel" value="disabled"/>
+  <input type='radio' name="secondStackingLabel" checked value="disabled"/>
   <span>disable</span>&emsp;
   <input type='radio' name="secondStackingLabel" value="none"/>
   <span>stackByNone(=Total)</span>&emsp;
@@ -69,7 +69,7 @@
   <span>stackByDepth</span>&emsp;
   <input type='radio' name="secondStackingLabel" value="frequency"/>
   <span>stackByFrequency</span>&emsp;
-  <input type='radio' name="secondStackingLabel" checked value="pixel_density"/>
+  <input type='radio' name="secondStackingLabel" value="pixel_density"/>
   <span>stackByPixelDensity</span>&emsp;
   <input type='radio' name="secondStackingLabel" value="structure"/>
   <span>stackByStructure</span>
@@ -81,9 +81,9 @@
   <span>substackByDepth</span>&emsp;
   <input type='radio' name="secondSubStackingLabel" value="frequency"/>
   <span>substackByFrequency</span>&emsp;
-  <input type='radio' name="secondSubStackingLabel" checked value="pixel_density"/>
+  <input type='radio' name="secondSubStackingLabel" value="pixel_density"/>
   <span>substackByPixelDensity</span>&emsp;
-  <input type='radio' name="secondSubStackingLabel" value="structure"/>
+  <input type='radio' name="secondSubStackingLabel" checked value="structure"/>
   <span>substackByStructure</span>
   <br/>
   <label for="secondStackPlottingValue">Plot # of:</label>
@@ -139,45 +139,78 @@ var myChart = new Chart(ctx, {
         datasets: []
     },
     options: {
-        title: {
-            display: true,
-            text: 'Data distribution'
-        },
-        scales: {
-            xAxes: [{
-              scaleLabel: {
-                display: true,
-                labelString: '',
-              },
-              stacked: true
-            }],
-            yAxes: [
-            {
-              scaleLabel: {
-                display: true,
-                labelString: '# of frames',
-              },
-              id: 'left-y-axis',
-              ticks: {
-                  beginAtZero: true
-              },
-              stacked: true,
-              type: 'linear'
+      title: {
+          display: true,
+          text: 'Data distribution'
+      },
+      scales: {
+          xAxes: [{
+            // offset: false,
+            // gridLines: {
+            //   offsetGridLines: false
+            // },
+            scaleLabel: {
+              display: true,
+              labelString: '',
             },
-            {
-              scaleLabel: {
-                display: true,
-                labelString: '# of patients',
-              },
-              id: 'right-y-axis',
-              position: 'right',
-              ticks: {
-                  beginAtZero: true
-              },
-              stacked: true,
-              type: 'linear'
-            }]
-        }
+            stacked: true
+          }],
+          yAxes: [
+          {
+            scaleLabel: {
+              display: true,
+              labelString: '# of frames',
+            },
+            id: 'left-y-axis',
+            ticks: {
+                beginAtZero: true
+            },
+            stacked: true,
+            type: 'linear'
+            // type: 'logarithmic'
+          },
+          {
+            scaleLabel: {
+              display: true,
+              labelString: '# of patients',
+            },
+            id: 'right-y-axis',
+            position: 'right',
+            ticks: {
+                beginAtZero: true
+            },
+            stacked: true,
+            type: 'linear'
+            // type: 'logarithmic'
+          }]
+      },
+      legend: {
+        position: 'bottom'
+      },
+      hover: {
+          animationDuration: 0
+      },
+      animation: {
+          duration: 1000,
+          onComplete: function () {
+              var chartInstance = this.chart,
+                  ctx = chartInstance.ctx;
+              ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, Chart.defaults.global.defaultFontStyle, Chart.defaults.global.defaultFontFamily);
+              ctx.fillStyle = "black";
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              
+              this.data.datasets.forEach(function (dataset, i) {
+                  var meta = chartInstance.controller.getDatasetMeta(i);
+                  meta.data.forEach(function (bar, index) {
+                    console.log(bar)
+                      var value = dataset.data[index];
+                      var short_label = dataset.short_label;
+                      if(value>0) ctx.fillText(short_label, bar._model.x, bar._model.y + (bar._view.base-bar._view.y)/2 + 5);
+                  });
+              });
+          }
+      }
     }
 });
 
@@ -223,8 +256,12 @@ async function callStats({groupBy}) {
  */
  async function refresh() {
 
-  var query_res = await callStats({groupBy: ['depth', 'frequency', 'pixel_density', 'structure']});
 
+  
+  /**
+   * Query to compute all labels
+   */
+  var query_res = await callStats({groupBy: ['depth', 'frequency', 'pixel_density', 'structure']});
   let labels = {
     depth: [],
     frequency: [],
@@ -248,213 +285,152 @@ async function callStats({groupBy}) {
   var datasets = myChart.data.datasets;
   
 
+  var stackIndex = 0
+  /**
+   * Plot multi-stackable datasets
+   */  
+  async function plotDataset(fields, stackIndexIgnore, number_of='number_of_frames' , yAxisID='left-y-axis') {
+    
+    console.log(fields)
 
-  // flat dataset for total
-  async function populateDataset(mainField, stackIndex, number_of='number_of_frames' , yAxisID='left-y-axis') {
-      
-      var mainLabels = labels[mainField]
-      
-      var query_res = await callStats({groupBy: [mainField]});
-
-      // let mainLabels = [];
-      // for ( row of query_res ) {
-      //   if ( !mainLabels.includes(row[mainField]) )
-      //     mainLabels.push(row[mainField]);
-      // }
-      // mainLabels.sort((a,b)=>a - b)
-
-      let label = 'total '+number_of
-
+    var mainField = fields[0]
+    var stackField = fields[1]
+    var substackField = fields[2]
+    
+    var mainLabels = labels[mainField]
+    var stackLabels = labels[stackField]
+    var substackLabels = labels[substackField]
+    
+    function computeDataset(query_res, comparativeFunction) {
       let data = []
       for (let mainLabel of mainLabels) {
         let value = 0;
-        for (row of query_res) {
-          if (row[mainField]==mainLabel) {
+        for (let row of query_res) {
+          if (comparativeFunction(mainLabel, row)) {//(row[mainField]==mainLabel) {
               value = new Number(row[number_of])
               break;
           }
         }
         data.push(value)
       }
+      return data;
+    }
 
+    if (fields.length>=1) {
+      
+      let query_res = await callStats({groupBy: [mainField]});
+
+      stackIndex++
+
+      // plot total
       datasets.push({
-        label,
-        data,
-        borderWidth: 1,
-        stack: stackIndex
-      });
-  }
-
-  // stacked datasets
-  async function populateStackDataset(mainField, stackField, stackIndex, number_of='number_of_frames' , yAxisID='left-y-axis') {
-    
-    var mainLabels = labels[mainField]
-    var stackLabels = labels[stackField]
-
-    var query_res = await callStats({groupBy: [mainField, stackField]});
-
-    // let mainLabels = [];
-    // let stackLabels = [];
-    // for ( row of query_res ) {
-    //   if ( !mainLabels.includes(row[mainField]) )
-    //     mainLabels.push(row[mainField]);
-    //   if ( !stackLabels.includes(row[stackField]) )
-    //     stackLabels.push(row[stackField]);
-    // }
-    // mainLabels.sort((a,b)=>a - b)
-    // stackLabels.sort((a,b)=>a - b)
-    
-    for (let stackLabel of stackLabels) {
-      let label = number_of+' given '+stackField+'='+stackLabel
-
-      let data = [];
-      for (let mainLabel of mainLabels) {
-        let value = 0;
-        for (row of query_res) {
-          if (row[mainField]==mainLabel && row[stackField]==stackLabel ) {
-            value = new Number(row[number_of])
-            break;
-          }
-        }
-        data.push(value)
-      }
-
-      datasets.push({
-        label,
-        data,
-        backgroundColor: rainbow(stackLabels.length, stackLabels.indexOf(stackLabel), 0.5 ),
-        // borderColor: borderColors[stackingLabels.indexOf(stackValue)],
+        label: 'total '+number_of,
+        short_label: 'total',
+        data: computeDataset(
+          query_res,
+          (current_label, current_row) => current_row[mainField]==current_label
+        ),
         borderWidth: 1,
         stack: stackIndex,
+        // barThickness: 'flex',
+        // categoryPercentage: 0.9,
+        // barPercentage: 1,
         yAxisID: yAxisID
       });
 
-    }
+      if (fields.length>=2) {
 
-  }
+        let query_res = await callStats({groupBy: [mainField, stackField]});
 
-  // super stacked datasets
-  async function populateSubstackDataset(mainField, stackField, substackField, stackIndex, number_of='number_of_frames' , yAxisID='left-y-axis') {
-    
-    var mainLabels = labels[mainField]
-    var stackLabels = labels[stackField]
-    var substackLabels = labels[substackField]
-
-    var query_res = await callStats({groupBy: [mainField, stackField, substackField]});
-
-    // let mainLabels = [];
-    // let stackLabels = [];
-    // let substackLabels = [];
-    // for ( row of query_res ) {
-    //   if ( !mainLabels.includes(row[mainField]) )
-    //     mainLabels.push(row[mainField]);
-    //   if ( !stackLabels.includes(row[stackField]) )
-    //     stackLabels.push(row[stackField]);
-    //   if ( !substackLabels.includes(row[substackField]) )
-    //   substackLabels.push(row[substackField]);
-    // }
-    // mainLabels.sort((a,b)=>a - b)
-    // stackLabels.sort((a,b)=>a - b)
-    // substackLabels.sort((a,b)=>a - b)
-
-    for (let stackLabel of stackLabels) {
-      for (let subStackLabel of substackLabels) {
-
-        let label = number_of+' given '+stackField+'='+stackLabel+' & '+substackField+'='+subStackLabel
+        stackIndex++
+        var stackIndexStack = stackIndex
+        stackIndex++
+        var subStackIndexStack = stackIndex
         
-        let data = []
-        for (let mainLabel of mainLabels) {
-          let value = 0;
-          for (row of query_res) {
-            if (row[mainField]==mainLabel && row[stackField]==stackLabel && row[substackField]==subStackLabel ) {
-                value = new Number(row[number_of])
-                break;
-            }
-          }
-          data.push(value)
-        }
+        // plot stacks
+        for (let stackLabel of stackLabels) {
 
-        datasets.push({
-          label,
-          data,
-          backgroundColor: rainbow( stackLabels.length, stackLabels.indexOf(stackLabel), 0.5),
-          borderColor: rainbow( substackLabels.length*2, substackLabels.indexOf(subStackLabel)*2+1 ),
-          borderSkipped: '',
-          borderWidth: 2,
-          stack: stackIndex,
-          yAxisID: yAxisID
-        });
+          datasets.push({
+            label: number_of+' given '+stackField+'='+stackLabel,
+            short_label: stackField.substring(0,2).toUpperCase()+'='+stackLabel,
+            data: computeDataset(
+              query_res,
+              (current_label, current_row) => current_row[mainField]==current_label && current_row[stackField]==stackLabel
+            ),
+            backgroundColor: rainbow( stackLabels.length, stackLabels.indexOf(stackLabel), 0.5),
+            borderSkipped: '',
+            borderWidth: 2,
+            stack: stackIndexStack,
+            yAxisID: yAxisID
+          });
 
-      }
-    }
+          if (fields.length>=3) {
+            
+            let query_res = await callStats({groupBy: [mainField, stackField, substackField]});
+
+            // stackIndex++
+
+            for (let subStackLabel of substackLabels) {
+
+              datasets.push({
+                label: number_of+' given '+stackField+'='+stackLabel+' & '+substackField+'='+subStackLabel,
+                short_label: substackField.substring(0,2).toUpperCase()+'='+subStackLabel,
+                data: computeDataset(
+                  query_res,
+                  (current_label, current_row) => current_row[mainField]==current_label && current_row[stackField]==stackLabel && current_row[substackField]==subStackLabel
+                ),
+                backgroundColor: rainbow( stackLabels.length, stackLabels.indexOf(stackLabel), 0.5),
+                borderColor: rainbow( substackLabels.length*2, substackLabels.indexOf(subStackLabel)*2+1 ),
+                borderSkipped: '',
+                borderWidth: 2,
+                stack: subStackIndexStack,
+                // categoryPercentage: (stackLabels.indexOf(stackLabel)+1) / stackLabels.length * 0.8,
+                // barPercentage: 0.8,
+                yAxisID: yAxisID
+              });
+              // myChart.update();
+              // await new Promise( res => setTimeout(res, 1000));
+              
+            }//end for subStackLabel of substackLabels
+
+          }//end if length>=3
+
+        }//end for stackLabel of stackLabels
+
+      }//end if length>=2
+    
+    }//end if length>=1
 
   }
 
-  let mainLabel = $('input[name="mainLabel"]:checked').val()
-  let firstStackingLabel = $('input[name="firstStackingLabel"]:checked').val()
-  let firstSubstackingLabel = $('input[name="firstSubStackingLabel"]:checked').val()
-  let secondStackingLabel = $('input[name="secondStackingLabel"]:checked').val()
   
-  let firstStackPlotting = $('#firstStackPlottingValue')[0].options[$('#firstStackPlottingValue')[0].selectedIndex].value
-  let secondStackPlotting = $('#secondStackPlottingValue')[0].options[$('#secondStackPlottingValue')[0].selectedIndex].value
 
-  if (firstStackingLabel!='disabled')
-    if (firstSubstackingLabel=='disabled')
-      await populateStackDataset(mainLabel, firstStackingLabel, 1, firstStackPlotting);
-    else
-      await populateSubstackDataset(mainLabel, firstStackingLabel, firstSubstackingLabel, 2, firstStackPlotting);
-
-  if (secondStackingLabel=='none')
-    await populateDataset(mainLabel, labels[mainLabel], 4, secondStackPlotting, 'right-y-axis');
-  else if (secondStackingLabel!='disabled') {
-    await populateStackDataset(mainLabel, secondStackingLabel, 4, secondStackPlotting, 'right-y-axis');
+  await new Promise( res => setTimeout(res, 1000));
+  let mainField = $('input[name="mainLabel"]:checked').val() 
+  {
+    let field = $('input[name="firstStackingLabel"]:checked').val()
+    let subField = $('input[name="firstSubStackingLabel"]:checked').val()
+    let valueOf = $('#firstStackPlottingValue')[0].options[$('#firstStackPlottingValue')[0].selectedIndex].value
+    let fields = [mainField]
+    if (field!='none')                          fields.push(field)
+    if (field!='none' && subField!='disabled')  fields.push(subField)
+    if (field!='disabled')                      await plotDataset(fields, 1, valueOf);
+  }
+  {
+    let field = $('input[name="secondStackingLabel"]:checked').val()
+    let subField = $('input[name="secondSubStackingLabel"]:checked').val()
+    let valueOf = $('#secondStackPlottingValue')[0].options[$('#secondStackPlottingValue')[0].selectedIndex].value
+    let fields = [mainField]
+    if (field!='none')                          fields.push(field)
+    if (field!='none' && subField!='disabled')  fields.push(subField)
+    if (field!='disabled')                      await plotDataset(fields, 2, valueOf, 'right-y-axis');
   }
 
-  
-  // total
-  // {
-  //   let label = 'total # of frames'
-  //   let data = []
 
-  //   for (let mainValue of mainLabels) {
-  //     let sum = 0;
-  //     for (row of query_res)
-  //       if (row[mainLabel]==mainValue)
-  //           sum += row.number_of_frames
-  //     data.push(sum)
-  //   }
-      
-  //   datasets.push({
-  //     label,
-  //     data,
-  //     borderWidth: 1,
-  //     stack: 0
-  //   });
-  // }
-  // {
-  //   let label = 'total # of patients'
-  //   let data = []
 
-  //   for (let mainValue of mainLabels) {
-  //     let sum = 0;
-  //     for (row of query_res)
-  //       if (row[mainLabel]==mainValue)
-  //           sum += new Number(row.number_of_patients)
-  //     data.push(sum)
-  //   }
-      
-  //   datasets.push({
-  //     label,
-  //     data,
-  //     borderWidth: 1,
-  //     stack: 10,
-  //     yAxisID: 'second-y-axis'
-  //   });
-  // }
-
-  myChart.data.labels = labels[mainLabel]
+  myChart.data.labels = labels[mainField]
   myChart.data.datasets = datasets
-  myChart.options.scales.xAxes[0].scaleLabel.labelString = mainLabel
+  myChart.options.scales.xAxes[0].scaleLabel.labelString = mainField
   myChart.update();
 
 }

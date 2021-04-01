@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link href="Chart.min.css" rel="stylesheet" />
+</head>
+
+<body>
+
+
+<h1>Iclus 2021 data-set platform</h1>
+
+<form action="api/stats" method="get" name="queryform" id="queryform">
+
+  <label name="fieldA">Field column A:</label>
+  <select name="fieldA" id="fieldA">
+    <option value="depth">depth</option>
+    <option value="frequency">frequency</option>
+    <option value="pixel_density">pixel_density</option>
+    <option value="structure" selected>structure</option>
+  </select>
+
+  <label name="fieldB">Field column B:</label>
+  <select name="fieldB" id="fieldB">
+    <option value="depth" selected>depth</option>
+    <option value="frequency">frequency</option>
+    <option value="pixel_density">pixel_density</option>
+    <option value="structure">structure</option>
+  </select>
+
+  <label name="fieldC">Field column C:</label>
+  <select name="fieldC" id="fieldC">
+    <option value="depth">depth</option>
+    <option value="frequency" selected>frequency</option>
+    <option value="pixel_density">pixel_density</option>
+    <option value="structure">structure</option>
+  </select>
+
+  <label name="fieldD">Field column D:</label>
+  <select name="fieldD" id="fieldD">
+    <option value="depth">depth</option>
+    <option value="frequency">frequency</option>
+    <option value="pixel_density" selected>pixel_density</option>
+    <option value="structure">structure</option>
+  </select>
+  
+  <br/>
+
+  <label name="valueOf">Plot # of:</label>
+  <select name="valueOf" id="valueOf">
+    <option value="number_of_frames">frames</option>
+    <option value="number_of_files">files</option>
+    <option value="number_of_analyses" selected>analyses</option>
+    <option value="number_of_patients">patients</option>
+    <option value="number_of_operators">operators</option>
+  </select>
+
+  <br/>
+  
+  <span>roundDepthBy:</span>&ensp;
+  <input name="roundDepthBy" value=20 id="roundDepthBy"/>
+  <span>roundFrequencyBy:</span>&ensp;
+  <input name="roundFrequencyBy" value=1 id="roundFrequencyBy"/>
+  <span>roundPixelDensityBy:</span>&ensp;
+  <input name="roundPixelDensityBy" value=20 id="roundPixelDensityBy"/>
+
+  <br/>
+  
+  <button type="button" onclick="refresh()">Update</button>
+
+</form>
+
+<hr/>
+
+
+
+<div id="sankey_multiple" style="width: 100%; height: 500px;"></div>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+
+<script type="text/javascript">
+
+
+
+google.charts.load("current", {packages:["sankey"]});
+google.charts.setOnLoadCallback(initChart);
+var data,
+    chart,
+    options;
+
+function initChart() {
+  data = new google.visualization.DataTable();
+  data.addColumn('string', 'From');
+  data.addColumn('string', 'To');
+  data.addColumn('number', 'Weight');
+  // data.addRows([
+  //     [ 'Brazil', 'Portugal', 5 ],
+  //     [ 'Brazil', 'France', 1 ]
+  // ]);
+
+  // Set chart options
+  options = {
+    width: '100%',
+    sankey: {
+      iterations: 0 // keeps label ordered
+    }
+  };
+
+  // Instantiate and draw our chart, passing in some options.
+  chart = new google.visualization.Sankey(document.getElementById('sankey_multiple'));
+  
+  refresh();
+}
+
+
+
+/**
+ * This function clear and repopulate the data table and replot the graph
+ */
+ async function refresh() {
+  
+  data.removeRows(0, data.getNumberOfRows())
+
+  let fieldA = $('#fieldA')[0].options[$('#fieldA')[0].selectedIndex].value
+  let fieldB = $('#fieldB')[0].options[$('#fieldB')[0].selectedIndex].value
+  let fieldC = $('#fieldC')[0].options[$('#fieldC')[0].selectedIndex].value
+  let fieldD = $('#fieldD')[0].options[$('#fieldD')[0].selectedIndex].value
+  let valueOf = $('#valueOf')[0].options[$('#valueOf')[0].selectedIndex].value
+  
+  let d1 = await getOneToOneData(fieldA, fieldB, valueOf);
+  data.addRows(d1)
+
+  let d2 = await getOneToOneData(fieldB, fieldC, valueOf);
+  data.addRows(d2)
+
+  let d3 = await getOneToOneData(fieldC, fieldD, valueOf);
+  data.addRows(d3)
+  
+  chart.draw(data, options);
+
+}
+
+
+
+async function getOneToOneData(xField, yField, number_of='number_of_frames') {
+  
+  let query_res = await callStats({groupBy: [xField, yField]});
+
+  let data = []
+  for (let row of query_res) {
+    data.push( [ xField+':'+row[xField], yField+':'+row[yField], parseInt(row[number_of]) ] );
+  }
+
+  return data
+}
+
+async function callStats({groupBy}) {
+  
+  // var query_res = [{"depth_grouped":320,"frequency_grouped":4,"number_of_frames":1400,"number_of_files":"14","number_of_analyses":"2","number_of_patients":"2","number_of_operator":"1","operators":[1001]},{"depth_grouped":240,"frequency_grouped":4,"number_of_frames":3900,"number_of_files":"39","number_of_analyses":"4","number_of_patients":"3","number_of_operator":"2","operators":[1001,1206]},{"depth_grouped":160,"frequency_grouped":6,"number_of_frames":35,"number_of_files":"1","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1001]},{"depth_grouped":160,"frequency_grouped":4,"number_of_frames":32959,"number_of_files":"324","number_of_analyses":"28","number_of_patients":"28","number_of_operator":"3","operators":[1001,1014,1206]},{"depth_grouped":120,"frequency_grouped":null,"number_of_frames":12194,"number_of_files":"76","number_of_analyses":"7","number_of_patients":"7","number_of_operator":"1","operators":[1001]},{"depth_grouped":120,"frequency_grouped":6,"number_of_frames":33336,"number_of_files":"148","number_of_analyses":"17","number_of_patients":"15","number_of_operator":"3","operators":[1001,1014,1255]},{"depth_grouped":120,"frequency_grouped":4,"number_of_frames":63303,"number_of_files":"354","number_of_analyses":"36","number_of_patients":"34","number_of_operator":"2","operators":[1014,1255]},{"depth_grouped":80,"frequency_grouped":null,"number_of_frames":10740,"number_of_files":"67","number_of_analyses":"6","number_of_patients":"5","number_of_operator":"1","operators":[1001]},{"depth_grouped":80,"frequency_grouped":6,"number_of_frames":192712,"number_of_files":"812","number_of_analyses":"65","number_of_patients":"49","number_of_operator":"3","operators":[1001,1014,1255]},{"depth_grouped":80,"frequency_grouped":4,"number_of_frames":85268,"number_of_files":"625","number_of_analyses":"58","number_of_patients":"58","number_of_operator":"4","operators":[1001,1014,1206,1255]},{"depth_grouped":80,"frequency_grouped":2,"number_of_frames":126,"number_of_files":"1","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1014]},{"depth_grouped":40,"frequency_grouped":10,"number_of_frames":552,"number_of_files":"3","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1255]},{"depth_grouped":40,"frequency_grouped":6,"number_of_frames":1040,"number_of_files":"5","number_of_analyses":"3","number_of_patients":"3","number_of_operator":"2","operators":[1001,1014]}];
+  let queries = []
+
+  for (field of groupBy) {
+    if(field=="depth" || field=="frequency" || field=="pixel_density" || field=="structure")
+      queries.push('groupBy='+field)
+  }
+  
+  let roundDepthBy = $('#roundDepthBy')[0].value
+  let roundFrequencyBy = $('#roundFrequencyBy')[0].value
+  let roundPixelDensityBy = $('#roundPixelDensityBy')[0].value
+
+  if (roundDepthBy!="null") queries.push('roundDepthBy='+roundDepthBy)
+  if (roundFrequencyBy!="null") queries.push('roundFrequencyBy='+roundFrequencyBy)
+  if (roundPixelDensityBy!="null") queries.push('roundPixelDensityBy='+roundPixelDensityBy)
+
+  return query_res = await fetch('../api/stats?'+queries.join('&'))
+    .then((resp) => resp.json()) // Transform the data into json
+    .catch( error => console.error(error) ); // If there is any error you will catch them here
+}
+
+
+
+
+</script>
+
+
+
+</body>
+
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link href="Chart.min.css" rel="stylesheet" />
+</head>
+
+<body>
+
+
+<h1>Iclus 2021 data-set platform</h1>
+
+<form action="api/stats" method="get" name="queryform" id="queryform">
+
+  <span>X Grouping: </span>&emsp;
+  <input type='radio' name="xLabel" checked value="depth"/>
+  <span>groupByDepth</span>&emsp;
+  <input type='radio' name="xLabel" value="frequency"/>
+  <span>groupByFrequency</span>&emsp;
+  <input type='radio' name="xLabel" value="pixel_density"/>
+  <span>groupByPixelDensity</span>&emsp;
+  <input type='radio' name="xLabel" value="structure"/>
+  <span>groupByStructure</span>
+
+  <br/>
+  
+  <span>Y Grouping: </span>&emsp;
+  <input type='radio' name="yLabel" value="depth"/>
+  <span>groupByDepth</span>&emsp;
+  <input type='radio' name="yLabel" checked value="frequency"/>
+  <span>groupByFrequency</span>&emsp;
+  <input type='radio' name="yLabel" value="pixel_density"/>
+  <span>groupByPixelDensity</span>&emsp;
+  <input type='radio' name="yLabel" value="structure"/>
+  <span>groupByStructure</span>
+
+  <br/>
+
+  <span>Z Grouping: </span>&emsp;
+  <input type='radio' name="zLabel" value="none"/>
+  <span>stackByNone(=Total)</span>&emsp;
+  <input type='radio' name="zLabel" value="depth"/>
+  <span>stackByDepth</span>&emsp;
+  <input type='radio' name="zLabel" value="frequency"/>
+  <span>stackByFrequency</span>&emsp;
+  <input type='radio' name="zLabel" checked value="pixel_density"/>
+  <span>stackByPixelDensity</span>&emsp;
+  <input type='radio' name="zLabel" value="structure"/>
+  <span>stackByStructure</span>
+
+  <br/>
+
+  <label name="firstStackPlottingValue">Plot # of:</label>
+  <select name="firstStackPlottingValue" id="firstStackPlottingValue">
+    <option value="number_of_frames" selected>frames</option>
+    <option value="number_of_analyses">analyses</option>
+    <option value="number_of_patients">patients</option>
+    <option value="number_of_operators">operators</option>
+  </select>
+  
+  <hr/>
+
+  <span>roundDepthBy:</span>&ensp;
+  <input name="roundDepthBy" value=10 id="roundDepthBy"/>
+  <span>roundFrequencyBy:</span>&ensp;
+  <input name="roundFrequencyBy" value=null id="roundFrequencyBy"/>
+  <span>roundPixelDensityBy:</span>&ensp;
+  <input name="roundPixelDensityBy" value=10 id="roundPixelDensityBy"/>
+
+  <br/>
+
+  <span>Radius:</span>&ensp;
+  <input type="range" min="1" max="100" value="50" class="slider" id="myRange" style="width: 800px" onchange="updateSlider(this.value)">
+
+  <br/>
+  
+  <button type="button" onclick="refresh()">Update</button>
+
+</form>
+
+<hr/>
+
+<canvas id="myChart" width="400" height="200"></canvas>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="Chart.min.js"></script>
+
+
+
+<script>
+
+
+
+var ctx = document.getElementById('myChart').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+        labels: [],
+        datasets: []
+    },
+    options: {
+      title: {
+          display: true,
+          text: 'Data distribution'
+      },
+      scales: {
+          xAxes: [{
+            // offset: false,
+            // gridLines: {
+            //   offsetGridLines: false
+            // },
+            scaleLabel: {
+              display: true,
+              labelString: '',
+            }
+          }],
+          yAxes: [
+          {
+            scaleLabel: {
+              display: true,
+              labelString: '',
+            },
+            // ticks: {
+            //     beginAtZero: true
+            // },
+            type: 'linear'
+            // type: 'logarithmic'
+          }]
+      },
+      legend: {
+        position: 'bottom'
+      },
+      hover: {
+          animationDuration: 0
+      },
+      onClick: function(arg1, arg2, arg3) {
+        console.log(arg1)
+        console.log(arg2)
+        console.log(myChart.getElementsAtEvent(arg1))
+      },
+      tooltips: {
+        callbacks: {
+          label: function(tooltipItem, data) {
+            console.log(tooltipItem, data)
+            // var label = data.datasets[tooltipItem.datasetIndex].label || '';
+            // label += (label?': ':'') + data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index].my_value;
+            var my_data = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+            var label = '( ' + my_data.x + ';' + my_data.y + ';' + my_data.my_z + ') ' + my_data.my_value;
+            return label;
+          }
+        }
+      },
+      animation: {
+          duration: 1000,
+          onComplete: function () {
+              var chartInstance = this.chart,
+                  ctx = chartInstance.ctx;
+              ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, Chart.defaults.global.defaultFontStyle, Chart.defaults.global.defaultFontFamily);
+              // ctx.fillStyle = "black";
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              
+
+              this.data.datasets.forEach(function (dataset, i) {
+                  var meta = chartInstance.controller.getDatasetMeta(i);
+                  meta.data.forEach(function (bar, index) {
+
+                    let {x,y,r,my_value} = dataset.data[index];
+                    var my_label = dataset.my_label;
+
+                    ctx.save();
+                    ctx.translate(bar._model.x+bar._model.radius/3, bar._model.y+5-bar._model.radius/3);
+                    // ctx.translate(bar._model.x, bar._model.y);
+                    // ctx.rotate(-Math.PI/2/4);
+                    ctx.fillText(my_value, 0, 0 )//+ (bar._view.base-bar._view.y)/2 + 5);
+                    ctx.restore();
+
+                  });
+              });
+          }
+      }
+    }
+});
+
+
+
+async function callStats({groupBy}) {
+  
+  // var query_res = [{"depth_grouped":320,"frequency_grouped":4,"number_of_frames":1400,"number_of_files":"14","number_of_analyses":"2","number_of_patients":"2","number_of_operator":"1","operators":[1001]},{"depth_grouped":240,"frequency_grouped":4,"number_of_frames":3900,"number_of_files":"39","number_of_analyses":"4","number_of_patients":"3","number_of_operator":"2","operators":[1001,1206]},{"depth_grouped":160,"frequency_grouped":6,"number_of_frames":35,"number_of_files":"1","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1001]},{"depth_grouped":160,"frequency_grouped":4,"number_of_frames":32959,"number_of_files":"324","number_of_analyses":"28","number_of_patients":"28","number_of_operator":"3","operators":[1001,1014,1206]},{"depth_grouped":120,"frequency_grouped":null,"number_of_frames":12194,"number_of_files":"76","number_of_analyses":"7","number_of_patients":"7","number_of_operator":"1","operators":[1001]},{"depth_grouped":120,"frequency_grouped":6,"number_of_frames":33336,"number_of_files":"148","number_of_analyses":"17","number_of_patients":"15","number_of_operator":"3","operators":[1001,1014,1255]},{"depth_grouped":120,"frequency_grouped":4,"number_of_frames":63303,"number_of_files":"354","number_of_analyses":"36","number_of_patients":"34","number_of_operator":"2","operators":[1014,1255]},{"depth_grouped":80,"frequency_grouped":null,"number_of_frames":10740,"number_of_files":"67","number_of_analyses":"6","number_of_patients":"5","number_of_operator":"1","operators":[1001]},{"depth_grouped":80,"frequency_grouped":6,"number_of_frames":192712,"number_of_files":"812","number_of_analyses":"65","number_of_patients":"49","number_of_operator":"3","operators":[1001,1014,1255]},{"depth_grouped":80,"frequency_grouped":4,"number_of_frames":85268,"number_of_files":"625","number_of_analyses":"58","number_of_patients":"58","number_of_operator":"4","operators":[1001,1014,1206,1255]},{"depth_grouped":80,"frequency_grouped":2,"number_of_frames":126,"number_of_files":"1","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1014]},{"depth_grouped":40,"frequency_grouped":10,"number_of_frames":552,"number_of_files":"3","number_of_analyses":"1","number_of_patients":"1","number_of_operator":"1","operators":[1255]},{"depth_grouped":40,"frequency_grouped":6,"number_of_frames":1040,"number_of_files":"5","number_of_analyses":"3","number_of_patients":"3","number_of_operator":"2","operators":[1001,1014]}];
+  let queries = []
+
+  for (field of groupBy) {
+    if(field=="depth")
+      queries.push('groupBy=depth')
+    else if(field=="frequency")
+      queries.push('groupBy=frequency')
+    else if(field=="pixel_density")
+      queries.push('groupBy=pixel_density')
+    else if(field=="structure")
+      queries.push('groupBy=structure')
+  }
+  
+  if ($('#roundDepthBy')[0].value!="null") queries.push('roundDepthBy='+$('#roundDepthBy')[0].value)
+  if ($('#roundFrequencyBy')[0].value!="null") queries.push('roundFrequencyBy='+$('#roundFrequencyBy')[0].value)
+  if ($('#roundPixelDensityBy')[0].value!="null") queries.push('roundPixelDensityBy='+$('#roundPixelDensityBy')[0].value)
+
+  return query_res = await fetch('../api/stats?'+queries.join('&'))
+    .then((resp) => resp.json()) // Transform the data into json
+    .catch( error => console.error(error) ); // If there is any error you will catch them here
+}
+
+
+
+var my_radius = 50
+function computeDataset(query_res, xField, yField, zField, zLabel, number_of) {
+  let maxValue = query_res.map( (row) => row[number_of] ).reduce( (max,current) => (new Number(current)>max?new Number(current):max) )
+  let data = []
+  let point = {};
+  for (let row of query_res) {
+    if (zLabel && row[zField]==zLabel) {
+      let point = {
+        x: row[xField],
+        y: row[yField],
+        my_z: row[zField],
+        r: (context) => Math.log(new Number( (row[number_of] / maxValue) + 2*my_radius/100) ) * 100,
+        my_value: row[number_of]// + ' / ' + maxValue
+      }
+      data.push(point);
+    }
+  }
+  return data;
+}
+
+
+
+function getOrderedLabels(query_res, field) {
+  let labels = []
+  for (row of query_res)
+    if ( !labels.includes(row[field]) )
+      labels.push(row[field])
+  labels.sort((a,b)=>a - b)
+  return labels
+}
+
+
+
+/**
+ * Plot multi-stackable datasets
+ */  
+async function plotDataset(xField, yField, zField, number_of='number_of_frames') {
+  
+  let query_res = await callStats({groupBy: [xField, yField, zField]});
+
+  var xLabels = getOrderedLabels(query_res, xField)
+  var yLabels = getOrderedLabels(query_res, yField)
+  var zLabels = getOrderedLabels(query_res, zField)
+
+  for (zLabel of zLabels) {
+    // plot total
+      myChart.data.datasets.push({
+      label: zField+' = '+zLabel,
+      my_label: 'total',
+      data: computeDataset( query_res, xField, yField, zField, zLabel, number_of ),
+      backgroundColor: rainbow( zLabels.length, zLabels.indexOf(zLabel), 0.3),
+      borderWidth: 1
+    });
+  }
+
+  myChart.data.labels = xLabels
+
+}
+
+
+
+/**
+ * This function replot the graph
+ */
+ async function refresh() {
+  
+  // reset datasets
+  myChart.data.datasets = [];
+  
+
+  await new Promise( res => setTimeout(res, 1000));
+  let xField = $('input[name="xLabel"]:checked').val() 
+  let yField = $('input[name="yLabel"]:checked').val() 
+  let zLabel = $('input[name="zLabel"]:checked').val()
+  let valueOf = $('#firstStackPlottingValue')[0].options[$('#firstStackPlottingValue')[0].selectedIndex].value
+  // if (field!='none')                          fields.push(field)
+  // if (field!='none' && subField!='disabled')  fields.push(subField)
+  // if (field!='disabled')                      
+  await plotDataset(xField, yField, zLabel, valueOf);
+
+
+
+  myChart.options.scales.xAxes[0].scaleLabel.labelString = xField
+  myChart.options.scales.yAxes[0].scaleLabel.labelString = yField
+  myChart.options.title.text = valueOf
+  myChart.update();
+
+}
+
+
+
+$(document).ready(function(){
+  refresh();
+})
+
+
+
+function updateSlider(slideAmount) {
+  my_radius = slideAmount
+  myChart.update();
+}
+
+
+
+function rainbow(numOfSteps, step, a=1) {
+    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
+    // Adam Cole, 2011-Sept-14
+    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+    var r, g, b;
+    var h = step / numOfSteps;
+    var i = ~~(h * 6);
+    var f = h * 6 - i;
+    var q = 1 - f;
+    switch(i % 6){
+        case 0: r = 1; g = f; b = 0; break;
+        case 1: r = q; g = 1; b = 0; break;
+        case 2: r = 0; g = 1; b = f; break;
+        case 3: r = 0; g = q; b = 1; break;
+        case 4: r = f; g = 0; b = 1; break;
+        case 5: r = 1; g = 0; b = q; break;
+    }
+    r = (~ ~(r * 255))
+    g = (~ ~(g * 255))
+    b = (~ ~(b * 255))
+    var c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+    return ('rgba('+r+', '+g+', '+b+', '+a+')');
+}
+
+
+
+</script>
+
+</body>
+
+</html>
