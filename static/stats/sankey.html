@@ -18,6 +18,8 @@
     <option value="frequency">frequency</option>
     <option value="pixel_density">pixel_density</option>
     <option value="structure" selected>structure</option>
+    <option value="rating">rating</option>
+    <option value="status">status</option>
   </select>
 
   <label name="fieldB">Field column B:</label>
@@ -26,6 +28,8 @@
     <option value="frequency">frequency</option>
     <option value="pixel_density">pixel_density</option>
     <option value="structure">structure</option>
+    <option value="rating">rating</option>
+    <option value="status">status</option>
   </select>
 
   <label name="fieldC">Field column C:</label>
@@ -34,6 +38,8 @@
     <option value="frequency" selected>frequency</option>
     <option value="pixel_density">pixel_density</option>
     <option value="structure">structure</option>
+    <option value="rating">rating</option>
+    <option value="status">status</option>
   </select>
 
   <label name="fieldD">Field column D:</label>
@@ -42,6 +48,8 @@
     <option value="frequency">frequency</option>
     <option value="pixel_density" selected>pixel_density</option>
     <option value="structure">structure</option>
+    <option value="rating">rating</option>
+    <option value="status">status</option>
   </select>
   
   <br/>
@@ -99,6 +107,8 @@ function initChart() {
   data.addColumn('string', 'From');
   data.addColumn('string', 'To');
   data.addColumn('number', 'Weight');
+  // A column for custom tooltip content
+  data.addColumn({type: 'string', role: 'tooltip'});
   // data.addRows([
   //     [ 'Brazil', 'Portugal', 5 ],
   //     [ 'Brazil', 'France', 1 ]
@@ -106,6 +116,7 @@ function initChart() {
 
   // Set chart options
   options = {
+    tooltip: {isHtml: true},
     width: '100%',
     sankey: {
       iterations: 0 // keeps label ordered
@@ -119,6 +130,7 @@ function initChart() {
 }
 
 
+let toBeRemoved = []
 
 /**
  * This function clear and repopulate the data table and replot the graph
@@ -149,12 +161,23 @@ function initChart() {
 
 
 async function getOneToOneData(xField, yField, number_of='number_of_frames') {
+
+  let query_res_x = await callStats({groupBy: [xField]});
   
-  let query_res = await callStats({groupBy: [xField, yField]});
+  let query_res_xy = await callStats({groupBy: [xField, yField]});
 
   let data = []
-  for (let row of query_res) {
-    data.push( [ xField+':'+row[xField], yField+':'+row[yField], parseInt(row[number_of]) ] );
+  
+  for (let row of query_res_xy) {
+    let xLabel = xField+':'+row[xField]
+    let yLabel = yField+':'+row[yField]
+    let weight = parseInt(row[number_of])
+    let totalWeightOfxLabel = parseInt(query_res_x.filter( (_row,_index) => _row[xField]==row[xField] )[0][number_of])
+    let tooltip = [
+      weight+' '+number_of.substring(10)+' from \"'+xLabel+'\" to \"'+yLabel+'\"',
+      '(out of '+totalWeightOfxLabel+' '+number_of.substring(10)+' in \"'+xLabel+'\")'
+      ].map( (line) => '<tspan x="0" dy="1.2em">'+line+'</tspan>' ).join('<br/>')
+    data.push( [ xLabel, yLabel, weight, tooltip ] );
   }
 
   return data
@@ -166,7 +189,7 @@ async function callStats({groupBy}) {
   let queries = []
 
   for (field of groupBy) {
-    if(field=="depth" || field=="frequency" || field=="pixel_density" || field=="structure")
+    if(field=="depth" || field=="frequency" || field=="pixel_density" || field=="structure" || field=="rating" || field=="status")
       queries.push('groupBy='+field)
   }
   

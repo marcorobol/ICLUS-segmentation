@@ -20,7 +20,11 @@
   <input type='radio' name="mainLabel" id="mainLabelByPixelDensity" value="pixel_density"/>
   <span>groupByPixelDensity</span>&emsp;
   <input type='radio' name="mainLabel" id="mainLabelByStructure" value="structure"/>
-  <span>groupByStructure</span>
+  <span>groupByStructure</span>&emsp;
+  <input type='radio' name="mainLabel" value="rating"/>
+  <span>groupByRating</span>&emsp;
+  <input type='radio' name="mainLabel" value="status"/>
+  <span>groupByStatus</span>
 
   <hr/>
 
@@ -36,7 +40,11 @@
   <input type='radio' name="firstStackingLabel" value="pixel_density"/>
   <span>stackByPixelDensity</span>&emsp;
   <input type='radio' name="firstStackingLabel" value="structure"/>
-  <span>stackByStructure</span>
+  <span>stackByStructure</span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="rating"/>
+  <span>groupByRating</span>&emsp;
+  <input type='radio' name="firstStackingLabel" value="status"/>
+  <span>groupByStatus</span>
   <br/>
   <span>Substack: </span>&emsp;
   <input type='radio' name="firstSubStackingLabel" value="disabled"/>
@@ -48,7 +56,11 @@
   <input type='radio' name="firstSubStackingLabel" checked value="pixel_density"/>
   <span>substackByPixelDensity</span>&emsp;
   <input type='radio' name="firstSubStackingLabel" value="structure"/>
-  <span>substackByStructure</span>
+  <span>substackByStructure</span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" value="rating"/>
+  <span>byRating</span>&emsp;
+  <input type='radio' name="firstSubStackingLabel" value="status"/>
+  <span>byStatus</span>
   <br/>
   <label name="firstStackPlottingValue">Plot # of:</label>
   <select name="firstStackPlottingValue" id="firstStackPlottingValue">
@@ -72,7 +84,11 @@
   <input type='radio' name="secondStackingLabel" value="pixel_density"/>
   <span>stackByPixelDensity</span>&emsp;
   <input type='radio' name="secondStackingLabel" value="structure"/>
-  <span>stackByStructure</span>
+  <span>stackByStructure</span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="rating"/>
+  <span>groupByRating</span>&emsp;
+  <input type='radio' name="secondStackingLabel" value="status"/>
+  <span>groupByStatus</span>
   <br/>
   <span>Substack: </span>&emsp;
   <input type='radio' name="secondSubStackingLabel" value="disabled"/>
@@ -84,7 +100,11 @@
   <input type='radio' name="secondSubStackingLabel" value="pixel_density"/>
   <span>substackByPixelDensity</span>&emsp;
   <input type='radio' name="secondSubStackingLabel" checked value="structure"/>
-  <span>substackByStructure</span>
+  <span>substackByStructure</span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" value="rating"/>
+  <span>byRating</span>&emsp;
+  <input type='radio' name="secondSubStackingLabel" value="status"/>
+  <span>byStatus</span>
   <br/>
   <label for="secondStackPlottingValue">Plot # of:</label>
   <select name="secondStackPlottingValue" id="secondStackPlottingValue">
@@ -238,6 +258,10 @@ async function callStats({groupBy}) {
       queries.push('groupBy=pixel_density')
     else if(field=="structure")
       queries.push('groupBy=structure')
+    else if(field=="rating")
+      queries.push('groupBy=rating')
+    else if(field=="status")
+      queries.push('groupBy=status')
   }
   
   if ($('#roundDepthBy')[0].value!="null") queries.push('roundDepthBy='+$('#roundDepthBy')[0].value)
@@ -261,14 +285,16 @@ async function callStats({groupBy}) {
   /**
    * Query to compute all labels
    */
-  var query_res = await callStats({groupBy: ['depth', 'frequency', 'pixel_density', 'structure']});
+  var query_res = await callStats({groupBy: ['depth', 'frequency', 'pixel_density', 'structure', 'rating', 'status']});
   let labels = {
     depth: [],
     frequency: [],
     pixel_density: [],
-    structure: []
+    structure: [],
+    rating: [],
+    status: []
   }
-  let {depth, frequency, pixel_density, structure} = labels;
+  let {depth, frequency, pixel_density, structure, rating, status} = labels;
   for (row of query_res) {
     for ( let [keys,values] of Object.entries(labels) ) {
       if ( !values.includes(row[keys]) )
@@ -415,6 +441,7 @@ async function callStats({groupBy}) {
     if (field!='none')                          fields.push(field)
     if (field!='none' && subField!='disabled')  fields.push(subField)
     if (field!='disabled')                      await plotDataset(fields, 1, valueOf);
+    myChart.options.scales.yAxes[0].scaleLabel.labelString = valueOf
   }
   {
     let field = $('input[name="secondStackingLabel"]:checked').val()
@@ -424,6 +451,7 @@ async function callStats({groupBy}) {
     if (field!='none')                          fields.push(field)
     if (field!='none' && subField!='disabled')  fields.push(subField)
     if (field!='disabled')                      await plotDataset(fields, 2, valueOf, 'right-y-axis');
+    myChart.options.scales.yAxes[1].scaleLabel.labelString = valueOf
   }
 
 

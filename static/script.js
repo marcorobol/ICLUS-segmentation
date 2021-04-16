@@ -29,19 +29,44 @@ function login()
 
 };
 
-/**
- * This function refresh the list of books
- */
-function loadBooks() {
 
-    fetch('../api/videos')
+const fields = ["operator_id", "patient_id", "analysis_id", "analysis_status", "rating_operator", "depth", "frequency", "focal_point", "pixel_density"]
+
+
+
+/**
+ * This function refresh the list
+ */
+function refresh() {
+    
+    var queryParams = []
+    // queryParams.push("where=depth%20IS%20NOT%20NULL")
+    queryParams.push("where=frames%20IS%20NOT%20NULL")
+    
+    for (field of fields) {
+        let value = $('#'+field)[0].options[$('#'+field)[0].selectedIndex].value
+        if(value=="null")
+            queryParams.push("where="+field+"%20IS%20NULL");
+        else if(value!="any")
+            queryParams.push("where="+field+"="+value);
+    }
+    
+    let query = '../api/videos?' + queryParams.join("&");
+    
+    // fetch('../api/videos?where=depth%20IS%20NOT%20NULL')
+    fetch(query)
     .then((resp) => resp.json()) // Transform the data into json
     .then(function(data) { // Here you get the data to modify as you please
         
         // console.log(data[0]);
 
-        const table = document.getElementById('videos'); // Get the list where we will place our authors
-        
+        // Title
+        const videosTitle = document.getElementById('videosTitle');
+        videosTitle.innerText = 'Videos: ' + data.length
+
+        // Table
+        document.getElementById('videos').children[1].innerHTML=""
+        const table = document.getElementById('videos'); // Get the table where we will place our authors
         return data.map(function(video) { // Map through the results and for each run the code below
             
             // let bookId = book.self.substring(book.self.lastIndexOf('/') + 1);
@@ -109,94 +134,64 @@ function loadBooks() {
             // span.innerHTML += `<button type="button" onclick="takeBook('${videos.self}')">Open</button>`
             
             // Append all rows
-            table.appendChild(tr);
+            table.children[1].appendChild(tr);
         })
 
     })
     .catch( error => console.error(error) );// If there is any error you will catch them here
     
 }
-loadBooks();
+// refresh();
 
-/**
- * This function is called by the Take button beside each book.
- * It create a new booklendings resource,
- * given the book and the logged in student
- */
-function takeBook(bookUrl)
-{
-    fetch('../api/v1/booklendings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify( { student: loggedUser.self, book: bookUrl } ),
-    })
-    .then((resp) => {
-        console.log(resp);
-        loadLendings();
-        return;
-    })
-    .catch( error => console.error(error) ); // If there is any error you will catch them here
 
-};
 
-/**
- * This function refresh the list of bookLendings.
- * It only load bookLendings given the logged in student.
- * It is called every time a book is taken of when the user login.
- */
-function loadLendings() {
 
-    const ul = document.getElementById('bookLendings'); // Get the list where we will place our lendings
 
-    ul.innerHTML = '';
+var roundDepthBy="null";
+var roundFrequencyBy="null";
+var roundPixelDensityBy="null";
 
-    fetch('../api/v1/booklendings?studentId=' + loggedUser.id)
-    .then((resp) => resp.json()) // Transform the data into json
-    .then(function(data) { // Here you get the data to modify as you please
-        
-        console.log(data);
-        
-        return data.map( (entry) => { // Map through the results and for each run the code below
-            
-            // let bookId = book.self.substring(book.self.lastIndexOf('/') + 1);
-            
-            let li = document.createElement('li');
-            let span = document.createElement('span');
-            span.innerHTML = `<a href="${entry.self}">${entry.book}</a>`;
-            // span.innerHTML += `<button type="button" onclick="takeBook('${book.self}')">Take the book</button>`
-            
-            // Append all our elements
-            li.appendChild(span);
-            ul.appendChild(li);
-        })
-    })
-    .catch( error => console.error(error) );// If there is any error you will catch them here
+async function callStats({groupBy}) {
+  
+    let queries = []
+  
+    for (field of groupBy) {
+    //   if(field=="depth" || field=="frequency" || field=="pixel_density" || field=="structure" || field=="rating" || field=="structure")
+        queries.push('groupBy='+field)
+    }
     
+    // let roundDepthBy = $('#roundDepthBy')[0].value
+    // let roundFrequencyBy = $('#roundFrequencyBy')[0].value
+    // let roundPixelDensityBy = $('#roundPixelDensityBy')[0].value
+  
+    if (roundDepthBy!="null") queries.push('roundDepthBy='+roundDepthBy)
+    if (roundFrequencyBy!="null") queries.push('roundFrequencyBy='+roundFrequencyBy)
+    if (roundPixelDensityBy!="null") queries.push('roundPixelDensityBy='+roundPixelDensityBy)
+  
+    return query_res = await fetch('../api/stats?'+queries.join('&'))
+      .then((resp) => resp.json()) // Transform the data into json
+      .catch( error => console.error(error) ); // If there is any error you will catch them here
 }
 
 
-/**
- * This function is called by clicking on the "insert book" button.
- * It creates a new book given the specified title,
- * and force the refresh of the whole list of books.
- */
-function insertBook()
+
+
+
+async function init(field)
 {
-    //get the book title
-    var bookTitle = document.getElementById("bookTitle").value;
+    var depths = await callStats({groupBy: [field]});
+    
+    var o = new Option("any", "any", true); //"option text", "value"
+    $("#"+field)[0].append(o);
 
-    console.log(bookTitle);
-
-    fetch('../api/v1/books', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify( { title: bookTitle } ),
-    })
-    .then((resp) => {
-        console.log(resp);
-        loadBooks();
-        return;
-    })
-    .catch( error => console.error(error) ); // If there is any error you will catch them here
+    for (d of depths) {
+        var o = new Option(d[field], d[field]); //"option text", "value"
+        /// jquerify the DOM object 'o' so we can use the html method
+        // $(o).html("option text");
+        $("#"+field)[0].append(o);
+    }
 
 };
+for (field of fields) {
+    init(field)
+}
