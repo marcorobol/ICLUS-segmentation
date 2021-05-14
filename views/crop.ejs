@@ -26,6 +26,13 @@
 
 <body>
     <div class="canvas-container">
+
+        <div class="info" style="top: 60px; position: relative; width: 200px">
+            <div class="vlog"></div>
+            <br/>
+            <div class="log" style="position: relative"></div>
+        </div>
+
         <span class="wrapper" style="top: 60px; position: relative">
 
             <img class="image" src="<%= annotationPngUrl %>" style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"/>
@@ -60,43 +67,63 @@
             </div>
         </span>
 
-        <div class="info" style="top: 60px; position: relative; width: 200px">
-            <div class="vlog"></div>
-            <br/>
-            <div class="log" style="position: relative"></div>
-        </div>
+        <div class="buttons" style="top: 60px; position: relative; width: 400px;">
+            <form action="/action_page.php" style="display: flex;">
 
-        <div class="buttons" style="top: 60px; position: relative; width: 200px">
-            <button>Skip</button>
-            <br/>
-            <button>Confirm crop</button>
-            <br/>
-            <button>Confirm segmentation</button>
-            <br/>
-            <button>Confirm and go to next</button>
-            <br>
-            <br>
-            <form action="/action_page.php">
+                <div style="width: 50%">
+                
+                    <button>Skip</button>
+                    <br/>
+                    <button>Confirm crop</button>
+                    <br/>
+                    <button>Confirm segmentation</button>
+                    <br/>
+                    <button>Confirm and go to next</button>
+                    <br>
+                    <br>
 
-                <label for="PatientId">PatientId:</label>
-                <span id="PatientId">1234</span><br><br>
+                    <label>time:</label><br>
+                    <input type="text" id="time" disabled><br>
+                    <label>x:</label><br>
+                    <input type="text" id="x" disabled><br>
+                    <label>y:</label><br>
+                    <input type="text" id="y" disabled><br>
+                    <label>w:</label><br>
+                    <input type="text" id="w" disabled><br>
+                    <label>h:</label><br>
+                    <input type="text" id="h" disabled><br>
+                    <label>th:</label><br>
+                    <input type="text" id="th" disabled><br>
+                    <label>bh:</label><br>
+                    <input type="text" id="bh" disabled><br>
+                    <label>ch:</label><br>
+                    <input type="text" id="ch" disabled><br>
 
-                <label for="AnalysisId">AnalysisId:</label>
-                <span id="AnalysisId">1234</span><br><br>
+                </div>
+                <div style="width: 50%">
+                
+                    <label for="PatientId">PatientId:</label>
+                    <span id="PatientId">1234</span><br><br>
 
-                <label for="AreaCode">AreaCode:</label>
-                <span id="AreaCode">1234</span><br><br>
+                    <label for="AnalysisId">AnalysisId:</label>
+                    <span id="AnalysisId">1234</span><br><br>
 
-                <label for="depth">Depth:</label>
-                <input type="text" id="depth" name="depth"><br><br>
+                    <label for="AreaCode">AreaCode:</label>
+                    <span id="AreaCode">1234</span><br><br>
 
-                <label for="frequency">Frequency:</label>
-                <input type="text" id="frequency" name="frequency"><br><br>
+                    <label for="depth">Depth:</label>
+                    <input type="text" id="depth" name="depth"><br><br>
 
-                <label for="focalPoint">FocalPoint:</label>
-                <input type="text" id="focalPoint" name="focalPoint"><br><br>
+                    <label for="frequency">Frequency:</label>
+                    <input type="text" id="frequency" name="frequency"><br><br>
 
-                <input type="submit" value="Overwrite metadata">
+                    <label for="focalPoint">FocalPoint:</label>
+                    <input type="text" id="focalPoint" name="focalPoint"><br><br>
+
+                    <input type="submit" value="Overwrite metadata">
+
+                </div>
+
             </form>
         </div>
     </div>
@@ -114,6 +141,7 @@
             this.on('timeupdate', function () {
             console.log(this.currentTime());
             $(".vlog").html("currentTime:"+this.currentTime())
+            $("#time")[0].value = this.currentTime()
             })
         });
 

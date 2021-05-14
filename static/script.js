@@ -92,7 +92,10 @@ function refresh() {
 
                 <td>
                     <a href='../unzipped/${video.patient_id}/${video.analysis_id}/raw/snapshot_${video.analysis_id}_${video.file_area_code}.png'>
-                        ${video.analysis_id}_${video.file_area_code}
+                        png
+                    </a>
+                    <a href='segment?patient_id=${video.patient_id}&analysis_id=${video.analysis_id}&area_code=${video.file_area_code}'>
+                        Segment
                     </a>
                 </td>
 

@@ -1,0 +1,41 @@
+var express = require('express');
+var router = express.Router();
+const pool = require('../pool')
+
+
+router.get('/videos', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
+
+  let where = req.query.where
+  where = (Array.isArray(where)?where:[where])
+    
+  const client = await pool.connect();
+  let query = `SELECT * FROM app_file_flat ${where?'WHERE '+where.join(' AND '):''} `;
+  const query_res = await client.query(query)
+  .catch(err => {
+    console.log(err.stack)
+  })
+  client.release();
+  
+  // for (const row of rows) {
+  //     [row.structure_id, row.operator_id, row.patient_id, row.analysis_id, row.analysis_status, row.file_id, row.file_area_code, row.rating_operator]);
+  // }
+  
+  // console.log('API respond to ' + req.path)
+  res.json(query_res.rows);
+});
+
+router.get('/videos/:video_ref', async function(req, res) {
+  
+  let client = await pool.connect();
+  let query = `SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)='${req.params.video_ref}'`
+  let query_res = await client.query(query)
+  .catch(err => {
+    console.log(err.stack)
+  })
+  client.release()
+  
+  res.json(query_res.rows[0]);
+});
+
+
+module.exports = router;

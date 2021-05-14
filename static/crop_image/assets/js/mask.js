@@ -1,11 +1,13 @@
 
-var SelectionBox =function(wrapper,initialBounds={}){
+var SelectionBox = function(wrapper,initialBounds={}) {
+
     if(typeof wrapper==="undefined" || wrapper==null){
         console.error("no wrapper specified")
         return;
     }
-    var canvasWrapper=wrapper; 
-    var canvas=wrapper.querySelector('canvas')
+
+    var canvasWrapper = wrapper; 
+    var canvas = wrapper.querySelector('canvas')
     var ctx = canvas.getContext("2d");
 
     var Handle = function (figure,params) {
@@ -35,11 +37,12 @@ var SelectionBox =function(wrapper,initialBounds={}){
 
 
     var SelectionFigure = function () {
+
         var figure = this;
 
-        this.movingBounds=null;
+        this.movingBounds = null;
 
-        this.bounds=Object.assign({
+        this.bounds = Object.assign({
             x : canvas.width*0.1,
             y : canvas.height*0.1,
             w : canvas.width-(canvas.width*0.2),
@@ -55,7 +58,7 @@ var SelectionBox =function(wrapper,initialBounds={}){
         	this.bounds.h=canvas.height-this.bounds.y-5;
         }
         
-        var moveBoundHandle=function(f,dx,changeXOrigin,dy,changeYOrigin){
+        var moveBoundHandle = function(f,dx,changeXOrigin,dy,changeYOrigin){
             if(f.bounds.w-dx<10){
                 dx=f.bounds.w-10;
             }
@@ -246,9 +249,9 @@ var SelectionBox =function(wrapper,initialBounds={}){
         }
 
         this.draw = function (ctx) {
-            var b=this.bounds;
+            var b = this.bounds;
             if(this.movingBounds!=null){
-                b=this.movingBounds;
+                b = this.movingBounds;
             }
 
             ctx.save();
@@ -305,13 +308,13 @@ var SelectionBox =function(wrapper,initialBounds={}){
 
 
     var initalTouchPos = null;
+
     var touchStart = function (e) {
         initalTouchPos = getCanvasRelativePosition(e.targetTouches[0].pageX, e.targetTouches[0].pageY);
         updateHandle(initalTouchPos.x, initalTouchPos.y, 20,false);
         startMove();
         canvas.style.border="5px solid "+ (currentHandle != null ? "green" : "blue");
     }
-
     
     var touchMove = function (e) {
         if (drag) {
@@ -356,12 +359,12 @@ var SelectionBox =function(wrapper,initialBounds={}){
         endMove();
     }
 
-    var startMove= function (){
+    var startMove = function (){
         drag = true;
         selection.startMove();
     }
 
-    var endMove= function (){
+    var endMove = function (){
         drag = false;
         selection.endMove();
     }
@@ -428,6 +431,13 @@ var SelectionBox =function(wrapper,initialBounds={}){
             b=selection.movingBounds;
         }
         $(".log").html("x:"+b.x+"<br/>y:"+b.y+"<br/>w:"+b.w+"<br/>h:"+b.h+"<br/>th:"+b.th+"<br/>bh:"+b.bh+"<br/>ch:"+b.ch)
+        $("#x")[0].value = b.x
+        $("#y")[0].value = b.y
+        $("#w")[0].value = b.w
+        $("#h")[0].value = b.h
+        $("#th")[0].value = b.th
+        $("#bh")[0].value = b.bh
+        $("#ch")[0].value = b.ch
     }
     draw();
     
