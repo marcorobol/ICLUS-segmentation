@@ -53,77 +53,6 @@ Vue.component('segment-row', {
 
 
 
-
-Vue.component('segment-form', {
-    data: () => {
-        return {metadata: []}
-    },
-    mounted () {
-        fetchMetadata().then(response => (this.metadata = response))
-    },
-    props: ['segmentation_id', 'analysis_id', 'area_code', 'timestamp', 'points'],
-    template: `
-        <form style="display: flex;">
-
-            <div style="width: 50%">
-            
-                <label>time:</label><br>
-                <input type="text" id="time" disabled><br>
-
-            </div>
-            <div style="width: 50%">
-                
-                <a href="http://iclus-web.bluetensor.ai/patients/details/${urlParams.patient_id}">Patient on ICLUS-WEB</a>
-                <br>
-                <a href="http://iclus-web.bluetensor.ai/analisys/details/${urlParams.analysis_id}">Analysis on ICLUS-WEB</a>
-                <br>
-                <br>
-
-                <label for="OperatorId">OperatorId:</label>
-                <span> {{ metadata.operator_id }} </span><br>
-                <label>operator_name:</label>
-                <span> {{ metadata.operator_name }} </span><br><br>
-
-                <label for="PatientId">PatientId:</label>
-                <span id="PatientId">${urlParams.patient_id}</span><br>
-                <label for="Patient_key">Patient_key:</label>
-                <span id="PatientId"> {{ metadata.patient_key }} </span><br><br>
-
-                <label for="AnalysisId">AnalysisId:</label>
-                <span id="AnalysisId">${urlParams.analysis_id}</span><br><br>
-
-                <label for="AreaCode">AreaCode:</label>
-                <span id="AreaCode">${urlParams.area_code}</span><br><br>
-
-                <label>analysis_status:</label>
-                <span> {{ metadata.analysis_status }} </span><br>
-                <label>rating_operator:</label>
-                <span> {{ metadata.rating_operator }} </span><br><br>
-
-                <label for="depth">depth:</label>
-                <input type="text" id="depth" name="depth" v-bind:value="metadata.depth"><br><br>
-
-                <label for="frequency">frequency:</label>
-                <input type="text" id="frequency" name="frequency" v-bind:value="metadata.frequency"><br><br>
-
-                <label for="focalPoint">focal_point:</label>
-                <input type="text" id="focalPoint" name="focalPoint" v-bind:value="metadata.focal_point"><br><br>
-
-                <label for="focalPoint">pixel_density:</label>
-                <input type="text" id="pixel_density" name="pixel_density" v-bind:value="metadata.pixel_density"><br><br>
-
-                <label for="focalPoint">frames:</label>
-                <input type="text" id="frames" name="frames" v-bind:value="metadata.frames"><br><br>
-
-                <input type="submit" value="Overwrite metadata">
-
-            </div>
-            
-        </form>
-    `
-})
-
-
 Vue.component('segment-table', {
     data: () => {
         return {
@@ -137,8 +66,9 @@ Vue.component('segment-table', {
     methods: {
         load_seg: function (seg) {
             videojs('my-video').currentTime(seg.timestamp)
-            segmentationTool.clearPoints();
-            segmentationTool.addPoints(seg.points);
+            console.log(this.$root.$refs)
+            this.$root.$refs.segmentation_tool.clearPoints();
+            this.$root.$refs.segmentation_tool.addPoints(seg.points);
             this.rate = seg.rate;
         },
         delete_seg: function (seg) {
@@ -154,7 +84,7 @@ Vue.component('segment-table', {
                 'area_code': urlParams.area_code,
                 'timestamp': $('#time')[0].value,
                 'rate': this.rate,
-                'points': segmentationTool.getPoints()
+                'points': this.$root.$refs.segmentation_tool.getPoints()
             }
             postSegmentation(s);
             this.segments.push(s)
@@ -163,7 +93,8 @@ Vue.component('segment-table', {
     template: `
         <div>
 
-            <table>
+            <v-simple-table>
+            <template v-slot:default>
                 <tr>
                     <th>
                         id
@@ -189,11 +120,12 @@ Vue.component('segment-table', {
                         {{ seg.rate }}
                     </td>
                     <td>
-                        <button type='button' v-on:click="load_seg(seg)">Load</button>
-                        <button type='button' v-on:click="delete_seg(seg)">Delete</button>
+                        <v-btn type='button' v-on:click="load_seg(seg)">Load</v-btn>
+                        <v-btn type='button' v-on:click="delete_seg(seg)">Delete</v-btn>
                     </td>
                 </tr>
-            </table>
+            </template>
+            </v-simple-table>
             
             <select v-model="rate">
                 <option disabled value="">Please select one</option>
@@ -203,8 +135,11 @@ Vue.component('segment-table', {
                 <option value="3">rate 3</option>
             </select>
             
-            <button type='button' v-on:click="create_seg()">Add
-            </button>
+            <br/>
+
+            <v-btn v-on:click="create_seg()">
+                Add
+            </v-btn>
 
         </div>
     `

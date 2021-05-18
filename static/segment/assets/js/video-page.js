@@ -1,94 +1,13 @@
-<!doctype html>
 
-<html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <link href="assets/css/custom_new.min.css" rel="stylesheet">
-
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
-
-    <link href="../javascript/video.js/video-js.min.css" rel="stylesheet" />
-    <link href="https://unpkg.com/@videojs/themes@1/dist/fantasy/index.css" rel="stylesheet" />
-    <style>
-        .vjs-control-bar {
-            position: absolute !important;
-            top: -60px !important;
-        }
-        .vjs-big-play-button {
-            position: absolute !important;
-            top: -30px !important;
-        }
-        .vjs-volume-panel, .vjs-picture-in-picture-control, .vjs-fullscreen-control {
-            visibility: hidden;
-        }
-    </style>
-
-    <script src="assets/vendors/jquery/3.4.1/jquery-3.4.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-
-    <script type="text/javascript">
-        var urlParams;
-        (window.onpopstate = function () {
-            var match,
-                pl     = /\+/g,  // Regex for replacing addition symbol with a space
-                search = /([^&=]+)=?([^&]*)/g,
-                decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
-                query  = window.location.search.substring(1);
-
-            urlParams = {};
-            while (match = search.exec(query))
-            urlParams[decode(match[1])] = decode(match[2]);
-        })();
-    </script>
-    
-    <script src="assets/js/fetch.js"></script>
-    <script src="assets/js/metadata-form.js"></script>
-    <script src="assets/js/segments-table.js"></script>
-    <script src="assets/js/cropping-tool.js"></script>
-    <script src="assets/js/segmentation-tool.js"></script>
-
-    <script src="../javascript/video.js/video.min.js"></script>
-</head>
-
-<body>
-    <div id="vue-root-app">
-    <v-app>
-    
-    <v-app-bar app>
-        <!-- -->
-    </v-app-bar>
-
-    <v-main>
-
-    <v-toolbar>
-        http://iclus-web.bluetensor.ai/
-        <a v-bind:href="'http://iclus-web.bluetensor.ai/operators/details/' + metadata.operator_id">
-            operator {{ metadata.operator_id }} ( {{ metadata.operator_name }} )
-        </a>
-        /
-        <a v-bind:href="'http://iclus-web.bluetensor.ai/patients/details/' + patient_id">
-            patient {{ patient_id }} ( {{ metadata.patient_key }} )
-        </a>
-        /
-        <a v-bind:href="'http://iclus-web.bluetensor.ai/analisys/details/' + analysis_id">
-            analysis {{ analysis_id }} 
-        </a>
-        /area code {{ area_code }}
-        /
-        status {{ metadata.analysis_status }}
-        /
-        rating {{ metadata.rating_operator }}
-        /
-        frames {{ metadata.frames }}
-    </v-toolbar>
-
-    <v-container fluid>
-
+Vue.component('video-page', {
+    data: () => {
+        return {metadata: []}
+    },
+    mounted () {
+        fetchMetadata().then(response => (this.metadata = response))
+    },
+    props: ['patient_id', 'analysis_id', 'area_code'],
+    template: `
         <div style="display: flex">
 
             <div class="left" style="position: relative; width: 400px; display: flex">
@@ -116,7 +35,7 @@
                                 <v-card
                                     class="mb-12"
                                 >
-    
+
                                     <metadata-form></metadata-form>
                             
                                 </v-card>
@@ -141,22 +60,8 @@
                             <v-stepper-content step="2">
                                 <v-card
                                     class="mb-12"
-                                >
-                                    <label>x:</label>
-                                    <input type="text" id="x" disabled><br>
-                                    <label>y:</label>
-                                    <input type="text" id="y" disabled><br>
-                                    <label>w:</label>
-                                    <input type="text" id="w" disabled><br>
-                                    <label>h:</label>
-                                    <input type="text" id="h" disabled><br>
-                                    <label>th:</label>
-                                    <input type="text" id="th" disabled><br>
-                                    <label>bh:</label>
-                                    <input type="text" id="bh" disabled><br>
-                                    <label>ch:</label>
-                                    <input type="text" id="ch" disabled><br>
-                                </v-card>
+                                    height="200px"
+                                ></v-card>
                         
                                 <v-btn
                                     color="primary"
@@ -214,11 +119,7 @@
             <div class="canvas-container">
                 <span class="wrapper" style="top: 60px; position: relative">
 
-                    <img v-if="e1 == 1" class="image" src="<%= annotationPngUrl %>" style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"/>
-
-                    <cropping-tool v-if="e1 == 2" ref="cropping_tool"></cropping-tool>
-
-                    <segmentation-tool v-if="e1 == 3" ref="segmentation_tool"></segmentation-tool>
+                    <img class="image" src="<%= annotationPngUrl %>" style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"/>
 
                     <video
                         id="my-video"
@@ -241,6 +142,10 @@
                         </p>
                     </video>
 
+                    <cropping-tool v-if="e1 == 2" ref="cropping_tool"></cropping-tool>
+
+                    <segmentation-tool v-if="e1 == 3" ref="segmentation_tool"></segmentation-tool>
+
                     <!-- <div class="positioner" style="z-index: 2; position: absolute; top: 0px;"> -->
                     <!--    <div style="padding-top: 74.9%;"> --><!-- padding-top must match the aspect ratio of your image = height / width * 100% -->
                             <!-- <canvas width="1068" height="800"></canvas> -->
@@ -262,49 +167,7 @@
                 <input type="text" id="time" disabled><br>
 
             </div>
-        
+
         </div>
-
-
-    </v-container>
-    </v-main>
-    </v-app>
-    </div>
-
-    <script type="text/javascript">
-        new Vue({
-            el: '#vue-root-app',
-            vuetify: new Vuetify(),
-            data: {
-                e1: 1,
-                segments: 1,
-                patient_id: urlParams.patient_id,
-                analysis_id: urlParams.analysis_id,
-                area_code: urlParams.area_code,
-                metadata: []
-            },
-            mounted () {
-                fetchMetadata().then(response => (this.metadata = response))
-            },
-            methods: {
-                changeStep: function(step) {
-                    console.log(step)
-
-                }
-            }
-        })
-    </script>
-
-
-    <script type="text/javascript">
-        videojs('my-video').ready(function () {
-            this.on('timeupdate', function () {
-            // console.log(this.currentTime());
-            // $(".vlog").html("currentTime:"+this.currentTime())
-            $("#time")[0].value = this.currentTime()
-            })
-        });
-    </script>
-
-</body>
-</html>
+    `
+});
