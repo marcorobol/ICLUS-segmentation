@@ -1,16 +1,5 @@
 prova
 
-screenshot
-crawlerCache
-crops
-crops*
-database
-download
-output
-profiles
-unzipped
-eng.traineddata
-
 # Logs
 logs
 *.log
