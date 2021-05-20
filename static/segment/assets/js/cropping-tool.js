@@ -1,6 +1,6 @@
 
 
-var SelectionBox = function(wrapper,initialBounds={}) {
+var SelectionBox = function( wrapper, callback, initialBounds={} ) {
 
     if(typeof wrapper==="undefined" || wrapper==null){
         console.error("no wrapper specified")
@@ -427,13 +427,14 @@ var SelectionBox = function(wrapper,initialBounds={}) {
             b=selection.movingBounds;
         }
         // $(".log").html("x:"+b.x+"<br/>y:"+b.y+"<br/>w:"+b.w+"<br/>h:"+b.h+"<br/>th:"+b.th+"<br/>bh:"+b.bh+"<br/>ch:"+b.ch)
-        $("#x")[0].value = b.x
-        $("#y")[0].value = b.y
-        $("#w")[0].value = b.w
-        $("#h")[0].value = b.h
-        $("#th")[0].value = b.th
-        $("#bh")[0].value = b.bh
-        $("#ch")[0].value = b.ch
+        // $("#x")[0].value = b.x
+        // $("#y")[0].value = b.y
+        // $("#w")[0].value = b.w
+        // $("#h")[0].value = b.h
+        // $("#th")[0].value = b.th
+        // $("#bh")[0].value = b.bh
+        // $("#ch")[0].value = b.ch
+        callback(b)
     }
     draw();
     
@@ -451,12 +452,19 @@ Vue.component('cropping-tool', {
     data: () => {
         return {
             selectionBox: null
+            // x,y,w,h,th,bh,ch : null
         }
     },
-    mounted () {
-        this.selectionBox = SelectionBox( this.$el );
+    emits: [ 'myevent' ],
+    async mounted () {
+        var response = await fetchCrops();
+        initialBounds = (response.length>0?response[response.length-1].crop_bounds:{})
+        this.selectionBox = SelectionBox( this.$el, (bounds)=>{ this.$emit('myevent', bounds) }, initialBounds );
     },
     methods: {
+        callback: function (bounds) {
+            this.$emit('myevent', bounds)
+        }
     },
     template: `
         <div class="positioner" style="z-index: 2; position: absolute; top: 0px;">

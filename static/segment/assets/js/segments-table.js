@@ -56,7 +56,11 @@ Vue.component('segment-row', {
 Vue.component('segment-table', {
     data: () => {
         return {
+            valid: false,
             rate: null,
+            rateRules: [
+              v => !!(v!=null) || 'Rate is required'
+            ],
             segments: []
         }
     },
@@ -78,70 +82,120 @@ Vue.component('segment-table', {
                 this.segments.splice(i,1)
             }
         },
-        create_seg: function () {
-            let s = {
-                'analysis_id': urlParams.analysis_id,
-                'area_code': urlParams.area_code,
-                'timestamp': $('#time')[0].value,
-                'rate': this.rate,
-                'points': this.$root.$refs.segmentation_tool.getPoints()
+        clear_seg: function () {
+            this.$root.$refs.segmentation_tool.clearPoints();
+            this.$refs.form.reset()
+        },
+        create_seg: async function () {
+            if (this.$refs.form.validate()) {
+                let s = {
+                    'analysis_id': urlParams.analysis_id,
+                    'area_code': urlParams.area_code,
+                    'timestamp': this.$root.current_video_time,//$('#time')[0].value,
+                    'rate': this.rate,
+                    'points': this.$root.$refs.segmentation_tool.getPoints()
+                }
+                s = (await postSegmentation(s)).rows[0];
+                this.segments.push(s);
+                this.$root.$refs.segmentation_tool.clearPoints();
+                this.$refs.form.reset();
             }
-            postSegmentation(s);
-            this.segments.push(s)
         }
     },
     template: `
-        <div>
+        <v-container fluid>
+            <v-row align="center">
 
-            <v-simple-table>
-            <template v-slot:default>
-                <tr>
-                    <th>
-                        id
-                    </th>
-                    <th>
-                        timestamp
-                    </th>
-                    <th>
-                        rate
-                    </th>
-                    <th>
-                        actions
-                    </th>
-                </tr>
-                <tr v-for="seg in segments">
-                    <td>
-                        {{ seg.segmentation_id }}
-                    </td>
-                    <td>
-                        {{ seg.timestamp }}
-                    </td>
-                    <td>
-                        {{ seg.rate }}
-                    </td>
-                    <td>
-                        <v-btn type='button' v-on:click="load_seg(seg)">Load</v-btn>
-                        <v-btn type='button' v-on:click="delete_seg(seg)">Delete</v-btn>
-                    </td>
-                </tr>
-            </template>
-            </v-simple-table>
-            
-            <select v-model="rate">
-                <option disabled value="">Please select one</option>
-                <option value="0">rate 0</option>
-                <option value="1">rate 1</option>
-                <option value="2">rate 2</option>
-                <option value="3">rate 3</option>
-            </select>
-            
-            <br/>
+                <v-col>
+                    <v-simple-table dense>
+                    <template v-slot:default>
+                        <thead>
+                            <tr>
+                                <th>
+                                    id
+                                </th>
+                                <th>
+                                    timestamp
+                                </th>
+                                <th>
+                                    rate
+                                </th>
+                                <th>
+                                    actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="seg in segments">
+                                <td>
+                                    {{ seg.segmentation_id }}
+                                </td>
+                                <td>
+                                    {{ seg.timestamp }}
+                                </td>
+                                <td>
+                                    {{ seg.rate }}
+                                </td>
+                                <td>
+                                    <v-btn type='button' v-on:click="load_seg(seg)">Load</v-btn>
+                                    <v-btn type='button' v-on:click="delete_seg(seg)">Delete</v-btn>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </template>
+                    </v-simple-table>
+                </v-col>
 
-            <v-btn v-on:click="create_seg()">
-                Add
-            </v-btn>
+                <v-col>
+                    <v-form
+                        ref="form"
+                        v-model="valid"
+                        lazy-validation
+                    >
+                        <v-container>
+                            <v-row>
+                                <v-col
+                                    cols="12"
+                                    sm="6"
+                                    md="8"
+                                >
+                                    <v-select
+                                        :items="[0,1,2,3]"
+                                        label="Give a rate"
+                                        v-model="rate"
+                                        :rules="rateRules"
+                                        filled
+                                        required
+                                    >
+                                    </v-select>
+                                </v-col>
+                                
+                                <v-col
+                                    cols="6"
+                                    md="4"
+                                >
+                                    <v-btn
+                                        class="mr-4"
+                                        v-on:click="create_seg()"
+                                    >
+                                        Add
+                                    </v-btn>
 
-        </div>
+                                    <v-btn
+                                        class="mr-4"
+                                        v-on:click="clear_seg()"
+                                    >
+                                        Clear
+                                    </v-btn>
+                                    
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-form>
+                </v-col>
+
+            </v-row>
+        </v-container>
     `
 })
 

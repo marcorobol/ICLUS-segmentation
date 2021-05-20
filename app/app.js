@@ -21,13 +21,13 @@ app.set('view engine', 'ejs');
  * Serve front-end static files
  */
 app.use('/', express.static('static'));
-app.use('/unzipped', express.static('../ICLUS-crawler/unzipped'), serveIndex('../ICLUS-crawler/unzipped', { 'icons': true }) );
+app.use('/unzipped', express.static(process.env.UNZIPPED), serveIndex(process.env.UNZIPPED, { 'icons': true }) );
 app.use('/mp4/:patientId/:analysisId/:area_code/video', async function(req, res) {
   let patientId = req.params.patientId;
   let analysisId = req.params.analysisId;
   let area_code = req.params.area_code;
   
-  let folder = '../ICLUS-crawler/unzipped/'+patientId+'/'+analysisId+'/raw/'
+  let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
   let fileName = 'video_'+analysisId+'_'+area_code
   let mp4Path = folder+fileName+'.mp4'
   
@@ -141,7 +141,23 @@ let video = {
 };
 video = db[1052].analyses[1129].areas[1];
 
-app.get('/segment', function(req, res) {
+app.get('/segment', async function(req, res) {
+
+  if (!req.query.patient_id || !req.query.analysis_id || !req.query.area_code) {
+
+    let client = await pool.connect();
+    let query = `SELECT * FROM app_file_flat ORDER BY RANDOM() LIMIT 1;`
+    let query_res = await client.query(query)
+    .catch(err => { console.log(err.stack) })
+    client.release()
+    let patient_id = query_res.rows[0].patient_id
+    let analysis_id = query_res.rows[0].analysis_id
+    let area_code = query_res.rows[0].file_area_code
+
+    res.redirect('?patient_id=' + patient_id + "&analysis_id=" + analysis_id + "&area_code=" + area_code);
+    return;
+  }
+
   let patientId = req.query.patient_id;
   let analysisId = req.query.analysis_id;
   let area_code = req.query.area_code;
@@ -170,7 +186,7 @@ var api_stats = require('./api/stats');
 app.use('/api/', api_stats)
 
 var api_videos = require('./api/videos');
-app.use('/api/', api_videos)
+app.use('/api/videos/', api_videos)
 
 
 

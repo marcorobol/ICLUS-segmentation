@@ -16,7 +16,7 @@ var SelectionFigure = function () {
             handle = handles[h]
             hx = handle.x
             hy = handle.y
-            if (x>hx-10 && x<hx+10 && y>hy-10 && y<hy+10) {
+            if (x>hx-5 && x<hx+5 && y>hy-5 && y<hy+5) {
                 return handle;
             }
         }
@@ -150,7 +150,7 @@ Vue.component('segmentation-tool', {
             };
         },
         getPoints: function () {
-            this.selection.handles.map( (e)=>{return {x:e.x, y:e.y}} )
+            return this.selection.handles.map( (e)=>{return {x:e.x, y:e.y}} )
         },
         clearPoints: function () {
             this.selection.handles.length = 0

@@ -2,10 +2,15 @@
 
 Vue.component('metadata-form', {
     data: () => {
-        return {metadata: []}
+        return {metadata: {}}
     },
     mounted () {
         fetchMetadata().then(response => (this.metadata = response))
+    },
+    methods: {
+        confirm: async function () {
+            await postApproval(this.metadata)
+        }
     },
     props: ['segmentation_id', 'analysis_id', 'area_code', 'timestamp', 'points'],
     template: `

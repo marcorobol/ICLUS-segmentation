@@ -51,224 +51,229 @@
     <script src="assets/js/segments-table.js"></script>
     <script src="assets/js/cropping-tool.js"></script>
     <script src="assets/js/segmentation-tool.js"></script>
+    <script src="assets/js/my-footer.js"></script>
 
     <script src="../javascript/video.js/video.min.js"></script>
 </head>
 
 <body>
     <div id="vue-root-app">
-    <v-app>
-    
-    <v-app-bar app>
-        <!-- -->
-    </v-app-bar>
+        <v-app>
+        
+            <v-app-bar app>
+                <a href="/">Home</a>
 
-    <v-main>
+                <v-spacer></v-spacer>
+                <a href="/stats">Bar chart</a>
 
-    <v-toolbar>
-        http://iclus-web.bluetensor.ai/
-        <a v-bind:href="'http://iclus-web.bluetensor.ai/operators/details/' + metadata.operator_id">
-            operator {{ metadata.operator_id }} ( {{ metadata.operator_name }} )
-        </a>
-        /
-        <a v-bind:href="'http://iclus-web.bluetensor.ai/patients/details/' + patient_id">
-            patient {{ patient_id }} ( {{ metadata.patient_key }} )
-        </a>
-        /
-        <a v-bind:href="'http://iclus-web.bluetensor.ai/analisys/details/' + analysis_id">
-            analysis {{ analysis_id }} 
-        </a>
-        /area code {{ area_code }}
-        /
-        status {{ metadata.analysis_status }}
-        /
-        rating {{ metadata.rating_operator }}
-        /
-        frames {{ metadata.frames }}
-    </v-toolbar>
+                <v-spacer></v-spacer>
+                <a href="/stats/sankey.html">Sankey diagram</a>
 
-    <v-container fluid>
+                <v-spacer></v-spacer>
+                <a href=".">
+                    Segment a random video
+                </a>
+            </v-app-bar>
 
-        <div style="display: flex">
+            <v-main>
 
-            <div class="left" style="position: relative; width: 400px; display: flex">
-                
-                <div style="width: 95%">
-
-
-
-
-                        <v-stepper
-                        v-model="e1"
-                        vertical
-                        @change="changeStep"
-                        >
-
-                            <v-stepper-step
-                                :complete="e1 > 1"
-                                step="1"
-                                editable
-                            >
-                                Metadata
-                            </v-stepper-step>
-                    
-                            <v-stepper-content step="1">
-                                <v-card
-                                    class="mb-12"
-                                >
-    
-                                    <metadata-form></metadata-form>
-                            
-                                </v-card>
-                        
-                                <v-btn
-                                    color="primary"
-                                    @click="e1 = 2"
-                                >
-                                    Confirm metadata
-                                </v-btn>
-                                
-                            </v-stepper-content>
-                    
-                            <v-stepper-step
-                                :complete="e1 > 2"
-                                step="2"
-                                editable
-                            >
-                                Crop
-                            </v-stepper-step>
-                    
-                            <v-stepper-content step="2">
-                                <v-card
-                                    class="mb-12"
-                                >
-                                    <label>x:</label>
-                                    <input type="text" id="x" disabled><br>
-                                    <label>y:</label>
-                                    <input type="text" id="y" disabled><br>
-                                    <label>w:</label>
-                                    <input type="text" id="w" disabled><br>
-                                    <label>h:</label>
-                                    <input type="text" id="h" disabled><br>
-                                    <label>th:</label>
-                                    <input type="text" id="th" disabled><br>
-                                    <label>bh:</label>
-                                    <input type="text" id="bh" disabled><br>
-                                    <label>ch:</label>
-                                    <input type="text" id="ch" disabled><br>
-                                </v-card>
-                        
-                                <v-btn
-                                    color="primary"
-                                    @click="e1 = 3"
-                                >
-                                    Confirm crop
-                                </v-btn>
-                        
-                                <v-btn text
-                                @click="e1 = 1"
-                                >
-                                    Review metadata
-                                </v-btn>
-                            </v-stepper-content>
-                    
-                            <v-stepper-step
-                                step="3"
-                                editable
-                            >
-                                Segment
-                            </v-stepper-step>
-                            
-                            <v-stepper-content step="3">
-                                <v-card
-                                    class="mb-12"
-                                    height="200px"
-                                >
-                                    <segment-table></segment-table>
-                                </v-card>
-                        
-                                <v-btn
-                                    color="primary"
-                                    @click="e1 = 1"
-                                >
-                                    Confirm segmentation
-                                </v-btn>
-                        
-                                <v-btn text
-                                    @click="e1 = 2"
-                                >
-                                    Redo crop
-                                </v-btn>
-                            </v-stepper-content>
-
-                        </v-stepper>
-
-
-
-
-
+                <div>
+                    http://iclus-web.bluetensor.ai/
+                    <a v-bind:href="'http://iclus-web.bluetensor.ai/operators/details/' + metadata.operator_id">
+                        operator {{ metadata.operator_id }} ( {{ metadata.operator_name }} )
+                    </a>
+                    /
+                    <a v-bind:href="'http://iclus-web.bluetensor.ai/patients/details/' + patient_id">
+                        patient {{ patient_id }} ( {{ metadata.patient_key }} )
+                    </a>
+                    /
+                    <a v-bind:href="'http://iclus-web.bluetensor.ai/analisys/details/' + analysis_id">
+                        analysis {{ analysis_id }} 
+                    </a>
+                    /area {{ area_code }}
+                    /
+                    status {{ metadata.analysis_status }} "{{ metadata.analysis_status_text }}"
+                    /
+                    rating {{ (metadata.rating_operator?metadata.rating_operator:"---") }}
+                    /
+                    frames {{ metadata.frames }}
                 </div>
 
-            </div>
+                <v-container fluid>
 
-            <div class="canvas-container">
-                <span class="wrapper" style="top: 60px; position: relative">
+                    <div style="display: flex">
 
-                    <img v-if="e1 == 1" class="image" src="<%= annotationPngUrl %>" style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"/>
+                        <div class="left" style="position: relative; width: 500px; display: flex">
+                            
+                            <div style="width: 95%">
 
-                    <cropping-tool v-if="e1 == 2" ref="cropping_tool"></cropping-tool>
 
-                    <segmentation-tool v-if="e1 == 3" ref="segmentation_tool"></segmentation-tool>
 
-                    <video
-                        id="my-video"
-                        class="video-js vjs-theme-fantasy"
-                        controls
-                        preload="auto"
-                        width="880"
-                        data-setup="{}"
-                        muted
-                        preload
-                        autoplay
-                    >
-                        <source src="<%= rawVideoUrl %>" type="video/mp4" preload autoplay/>
-                        <p class="vjs-no-js">
-                            To view this video please enable JavaScript, and consider upgrading to a
-                            web browser that
-                            <a href="https://videojs.com/html5-video-support/" target="_blank">
-                                supports HTML5 video
-                            </a>
-                        </p>
-                    </video>
 
-                    <!-- <div class="positioner" style="z-index: 2; position: absolute; top: 0px;"> -->
-                    <!--    <div style="padding-top: 74.9%;"> --><!-- padding-top must match the aspect ratio of your image = height / width * 100% -->
-                            <!-- <canvas width="1068" height="800"></canvas> -->
-                        <!-- </div> -->
-                    <!-- </div> -->
+                                    <v-stepper
+                                    v-model="e1"
+                                    vertical
+                                    @change="changeStep"
+                                    >
 
-                </span>
-            </div>
-
-            <div class="right" style="top: 60px; position: relative; width: 200px">
+                                        <v-stepper-step
+                                            :complete="e1 > 1"
+                                            step="1"
+                                            editable
+                                        >
+                                            Metadata
+                                        </v-stepper-step>
+                                
+                                        <v-stepper-content step="1">
+                                            <v-card
+                                                class="mb-12"
+                                            >
                 
-                <a href="http://iclus-web.bluetensor.ai/patients/details/${urlParams.patient_id}">Patient on ICLUS-WEB</a>
-                <br>
-                <a href="http://iclus-web.bluetensor.ai/analisys/details/${urlParams.analysis_id}">Analysis on ICLUS-WEB</a>
-                <br>
-                <br>
+                                                <metadata-form ref="metadata_form"></metadata-form>
+                                        
+                                            </v-card>
+                                    
+                                            <v-btn
+                                                color="primary"
+                                                @click="e1 = 2; confirmMetadata()"
+                                            >
+                                                Confirm metadata
+                                            </v-btn>
+                                            
+                                        </v-stepper-content>
+                                
+                                        <v-stepper-step
+                                            :complete="e1 > 2"
+                                            step="2"
+                                            editable
+                                        >
+                                            Crop
+                                        </v-stepper-step>
+                                
+                                        <v-stepper-content step="2">
+                                            <v-card
+                                                class="mb-12"
+                                            >
+                                                <span>x: {{ cropping_bounds.x }}</span>
+                                                <br>
+                                                <span>y: {{ cropping_bounds.y }}</span>
+                                                <br>
+                                                <span>w: {{ cropping_bounds.w }}</span>
+                                                <br>
+                                                <span>h: {{ cropping_bounds.h }}</span>
+                                                <br>
+                                                <span>th: {{ cropping_bounds.th }}</span>
+                                                <br>
+                                                <span>bh: {{ cropping_bounds.bh }}</span>
+                                                <br>
+                                                <span>ch: {{ cropping_bounds.ch }}</span>
+                                            </v-card>
+                                    
+                                            <v-btn
+                                                color="primary"
+                                                @click="e1 = 3; confirmCrop()"
+                                            >
+                                                Confirm crop
+                                            </v-btn>
+                                    
+                                            <v-btn text
+                                            @click="e1 = 1"
+                                            >
+                                                Review metadata
+                                            </v-btn>
+                                        </v-stepper-content>
+                                
+                                        <v-stepper-step
+                                            step="3"
+                                            editable
+                                        >
+                                            Segment
+                                        </v-stepper-step>
+                                        
+                                        <v-stepper-content step="3">
+                                            <v-card
+                                                class="mb-12"
+                                            >
+                                                <segment-table></segment-table>
+                                            </v-card>
+                                    
+                                            <v-btn
+                                                color="primary"
+                                                @click="e1 = 1"
+                                            >
+                                                Confirm segmentation
+                                            </v-btn>
+                                    
+                                            <v-btn text
+                                                @click="e1 = 2"
+                                            >
+                                                Redo crop
+                                            </v-btn>
+                                        </v-stepper-content>
 
-                <label>time:</label><br>
-                <input type="text" id="time" disabled><br>
-
-            </div>
-        
-        </div>
+                                    </v-stepper>
 
 
-    </v-container>
-    </v-main>
-    </v-app>
+
+
+
+                            </div>
+
+                        </div>
+
+                        <div class="canvas-container" style="padding-bottom: 60px;">
+                            <span class="wrapper" style="top: 60px; position: relative">
+
+                                <img v-if="e1 == 1" class="image" src="<%= annotationPngUrl %>" style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"/>
+
+                                <cropping-tool v-if="e1 == 2" @myevent="croppingToolMyEvent" ref="cropping_tool"></cropping-tool>
+
+                                <segmentation-tool v-if="e1 == 3" ref="segmentation_tool"></segmentation-tool>
+
+                                <video
+                                    id="my-video"
+                                    class="video-js vjs-theme-fantasy"
+                                    controls
+                                    preload="auto"
+                                    width="880"
+                                    data-setup="{}"
+                                    muted
+                                    preload
+                                    autoplay
+                                >
+                                    <source src="<%= rawVideoUrl %>" type="video/mp4" preload autoplay/>
+                                    <p class="vjs-no-js">
+                                        To view this video please enable JavaScript, and consider upgrading to a
+                                        web browser that
+                                        <a href="https://videojs.com/html5-video-support/" target="_blank">
+                                            supports HTML5 video
+                                        </a>
+                                    </p>
+                                </video>
+
+                                <!-- <div class="positioner" style="z-index: 2; position: absolute; top: 0px;"> -->
+                                <!--    <div style="padding-top: 74.9%;"> --><!-- padding-top must match the aspect ratio of your image = height / width * 100% -->
+                                        <!-- <canvas width="1068" height="800"></canvas> -->
+                                    <!-- </div> -->
+                                <!-- </div> -->
+
+                            </span>
+                        </div>
+
+                        <div class="right" style="top: 60px; position: relative; width: 50px">
+                            <br>
+                        </div>
+                    
+                    </div>
+
+
+                </v-container>
+
+            </v-main>
+
+            <my-footer></my-footer>
+
+        </v-app>
     </div>
 
     <script type="text/javascript">
@@ -281,15 +286,54 @@
                 patient_id: urlParams.patient_id,
                 analysis_id: urlParams.analysis_id,
                 area_code: urlParams.area_code,
-                metadata: []
+                metadata: [],
+                cropping_bounds: {x:0},
+                segmentations_stats: {"null":0, 0:0, 1:0, 2:0, 3:0},
+                current_video_time: 0
             },
-            mounted () {
-                fetchMetadata().then(response => (this.metadata = response))
+            async mounted () {
+
+                let vue_this = this;
+                videojs('my-video').ready( function () {
+                    this.on('timeupdate', function () {
+                        vue_this.current_video_time = this.currentTime()
+                    })
+                });
+
+                const statusMap = {
+                    1: 'Suspect',
+                    2: 'Positive',
+                    3: 'Negative',
+                    4: 'Post covid'
+                }
+                fetchMetadata().then( response => {
+                    this.metadata = response
+                    this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
+                })
+                
+                query_res = await fetch(`../api/segmentations/stats`)
+                    .then((resp) => resp.json()) // Transform the data into json
+                    .catch( error => console.error(error) ); // If there is any error you will catch them here
+                for (r of query_res) {
+                    this.segmentations_stats[r.rate] = r.count
+                }
+                
             },
             methods: {
-                changeStep: function(step) {
+                changeStep: function (step) {
                     console.log(step)
 
+                },
+                croppingToolMyEvent: function (bounds) {
+                    this.cropping_bounds = bounds
+                },
+                confirmMetadata: function () {
+                    console.log("confirmMetadata")
+                    this.$refs.metadata_form.confirm()
+                },
+                confirmCrop: function () {
+                    console.log("confirmCrop")
+                    postCrop({bounds: this.cropping_bounds})
                 }
             }
         })
@@ -297,13 +341,13 @@
 
 
     <script type="text/javascript">
-        videojs('my-video').ready(function () {
-            this.on('timeupdate', function () {
-            // console.log(this.currentTime());
-            // $(".vlog").html("currentTime:"+this.currentTime())
-            $("#time")[0].value = this.currentTime()
-            })
-        });
+        // videojs('my-video').ready(function () {
+        //     this.on('timeupdate', function () {
+        //     // console.log(this.currentTime());
+        //     // $(".vlog").html("currentTime:"+this.currentTime())
+        //     $("#time")[0].value = this.currentTime()
+        //     })
+        // });
     </script>
 
 </body>
