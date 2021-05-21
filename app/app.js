@@ -183,7 +183,10 @@ var api_segmentations = require('./api/segmentations');
 app.use('/api/', api_segmentations)
 
 var api_stats = require('./api/stats');
-app.use('/api/', api_stats)
+app.use('/api/stats', api_stats)
+
+var api_stats_federico = require('./api/stats_federico');
+app.use('/api/stats_federico', api_stats_federico)
 
 var api_videos = require('./api/videos');
 app.use('/api/videos/', api_videos)

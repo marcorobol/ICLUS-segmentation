@@ -17,9 +17,9 @@
     <option value="depth">depth</option>
     <option value="frequency">frequency</option>
     <option value="pixel_density">pixel_density</option>
-    <option value="structure" selected>structure</option>
+    <option value="structure">structure</option>
     <option value="rating">rating</option>
-    <option value="status">status</option>
+    <option value="status" selected>status</option>
     <option value="profile_scanner_brand">scanner</option>
   </select>
 
@@ -28,9 +28,9 @@
     <option value="depth">depth</option>
     <option value="frequency">frequency</option>
     <option value="pixel_density">pixel_density</option>
-    <option value="structure">structure</option>
+    <option value="structure" selected>structure</option>
     <option value="rating">rating</option>
-    <option value="status" selected>status</option>
+    <option value="status">status</option>
     <option value="profile_scanner_brand">scanner</option>
   </select>
 
@@ -72,8 +72,8 @@
   <label name="valueOf">Plot # of:</label>
   <select name="valueOf" id="valueOf">
     <option value="number_of_frames">frames</option>
-    <option value="number_of_files">files</option>
-    <option value="number_of_analyses" selected>analyses</option>
+    <option value="number_of_files" selected>files</option>
+    <option value="number_of_analyses">analyses</option>
     <option value="number_of_patients">patients</option>
     <option value="number_of_operators">operators</option>
   </select>
@@ -81,7 +81,7 @@
   <br/>
   
   <span>roundDepthBy:</span>&ensp;
-  <input name="roundDepthBy" value=20 id="roundDepthBy"/>
+  <input name="roundDepthBy" value=40 id="roundDepthBy"/>
   <span>roundFrequencyBy:</span>&ensp;
   <input name="roundFrequencyBy" value=1 id="roundFrequencyBy"/>
   <span>roundPixelDensityBy:</span>&ensp;
@@ -263,7 +263,7 @@ async function callStats({groupBy}) {
   if (roundFrequencyBy!="null") queries.push('roundFrequencyBy='+roundFrequencyBy)
   if (roundPixelDensityBy!="null") queries.push('roundPixelDensityBy='+roundPixelDensityBy)
 
-  return query_res = await fetch('../api/stats?'+queries.join('&'))
+  return query_res = await fetch('../api/stats_federico?'+queries.join('&'))
     .then((resp) => resp.json()) // Transform the data into json
     .catch( error => console.error(error) ); // If there is any error you will catch them here
 }
