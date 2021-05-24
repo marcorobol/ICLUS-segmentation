@@ -15,7 +15,6 @@ const pool = require('../pool')
 // 1808, 1809, 1812, 1920, 1814, 1914, 1915, 1916, 1917, 1919, 1939
 // 1821, 1824, 1826, 1832, 1833, 1834, 1835, 1836, 1837, 1838, 1839, 1840, 1841, 1843, 1844, 1817, 1818, 1819, 1820, 1823, 1825, 1828, 1829, 1830, 1831, 1842, 1845, 1846, 1847, 1848, 1849, 1850, 1851, 1852, 1853, 1854, 1855, 1856, 1857, 1858, 1859, 1860, 1861, 1862, 1863, 1865, 1866, 1867, 1868, 1869, 1864, 1880, 1881, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1870, 1871, 1872, 1873, 1874, 1875, 1876, 1877, 1878, 1879, 1889, 1890, 1891, 1892, 1893, 1894, 1895, 1896, 1897, 1898, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1910, 1911, 1912, 1899, 1901, 1902, 1921, 1922, 1923, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1932, 1933, 1934, 1935, 1936, 1937
 
-
 const roma_smargiassi_post_covid = [
   1808,
   1809,
@@ -284,86 +283,101 @@ const federico_subset_post = roma_smargiassi_post_covid.concat(pavia_perrone_pos
 const federico_subset = federico_subset_covid.concat(federico_subset_post);
 
 
+function caseOf (field, ranges) {
+  let SQL = ''
+  for (r of ranges) {
+    let [range, leftParenthesis, left, right, rightParenthesis] = r
+    if (left && right) {
+      let label = `${leftParenthesis} ${left} , ${right} ${rightParenthesis}`
+
+      let excludes = []
+      for ( let [exclude, value] of [ [leftParenthesis=='(', left], [rightParenthesis==')', right] ] ) {
+        if (exclude)
+        excludes.push(value)
+      }
+
+      let notIn = (excludes.length>0?`AND ${field} NOT IN (${excludes.join(',')})`:'')
+      SQL = SQL + `when ${field} between ${left} and ${right} ${notIn} then '${label}' `
+    }
+    else {
+      let label = `${left}`
+      SQL = SQL + `when ${field} = ${left} then '${label}' `
+    }
+  }
+  return SQL;
+}
 
 router.get('/', async function(req, res) {
 
-  // console.log(req.query.groupBy);
+  let SELECT = [];
+  let SUBSELECT = [];
+  let SUBSUBSELECT = [];
+  let GROUP_BY = [];
+  let ORDER_BY = [];
 
-  const groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
-  const groupByDepth = req.query.groupBy.includes('depth')
-  const groupByFrequency = req.query.groupBy.includes('frequency')
-  const groupByPixelDensity = req.query.groupBy.includes('pixel_density')
-  const groupByStructure = req.query.groupBy.includes('structure')
-  const groupByRating = req.query.groupBy.includes('rating')
-  const groupByStatus = req.query.groupBy.includes('status')
-
-  // console.log(req.query.roundDepthBy);
-  // console.log(req.query.roundFrequencyBy);
-  // console.log(req.query.roundPixelDensityBy);
+  // if (req.query.clusterIn) {
+  //   const clusterIn = (Array.isArray(req.query.clusterIn)?req.query.clusterIn:[req.query.clusterIn])
+  //   for (c of clusterIn) {
+  //     let field = c.match(/(\w+)/g)[0];
+  //     let ranges = [...c.matchAll(/(\(|\[)(\d+),(\d+)(\)|\])/g)]
+  //     SUBSELECT.push(`(select case ${caseOf(field,ranges)} else 'others' end) as _${field}`)
+  //   }
+  // }
   
   const roundDepthBy = req.query.roundDepthBy;
   const roundFrequencyBy = req.query.roundFrequencyBy;
   const roundPixelDensityBy = req.query.roundPixelDensityBy;
-  
-  let SELECT = [];
+
+  const groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
   for (by of groupBy) {
-    SELECT.push(by)
+    let field = by.match(/(\w+)/g)[0];
+
+
+
+    SELECT.push(field)
+
+
+
+    let ranges = [...by.matchAll(/(\(|\[)(\d*\.?\d*),*(\d*\.?\d*)(\)|\])/g)]
+    console.log(by)
+    if(ranges.length>0) {
+      SUBSELECT.push(`(select case ${caseOf(field,ranges)} else 'others' end) as ${field}`)
+      SUBSELECT.push(`${field} AS _${field}`)
+    }
+    else {
+      SUBSELECT.push(field)
+      SUBSELECT.push(`${field} AS _${field}`)
+    }
+
+
+    //::numeric similar to +0.00001
+    if      (field=="depth")         SUBSUBSELECT.push((roundDepthBy?`ROUND ( (depth::numeric)/${roundDepthBy} )*${roundDepthBy} AS depth`:`depth`))
+    else if (field=="frequency")     SUBSUBSELECT.push((roundFrequencyBy?`ROUND ( (frequency::numeric)/${roundFrequencyBy} )*${roundFrequencyBy} AS frequency`:`frequency`))
+    else if (field=="pixel_density") SUBSUBSELECT.push((roundPixelDensityBy?`ROUND ( (pixel_density::numeric)/${roundPixelDensityBy} )*${roundPixelDensityBy} AS pixel_density`:`pixel_density`))
+    else if (field=="structure")     SUBSUBSELECT.push(`structure_id AS structure`)
+    else if (field=="rating")        SUBSUBSELECT.push(`rating_operator AS rating`)
+    else if (field=="status")        SUBSUBSELECT.push(`analysis_status AS status`)
+    else                             SUBSUBSELECT.push(by)
+
+
+
+    GROUP_BY.push(field)
+    
+
+
+    if (field=="structure")          ORDER_BY.push(`structure ASC`)
+    else if (field=="rating")        ORDER_BY.push(`rating ASC`)
+    else if (field=="status")        ORDER_BY.push(`status ASC`)
+    else                          ORDER_BY.push(field+" ASC")
+
   }
-  // if (groupByDepth)         SELECT.push(`depth`)
-  // if (groupByFrequency)     SELECT.push(`frequency`)
-  // if (groupByPixelDensity)  SELECT.push(`pixel_density`)
-  // if (groupByStructure)     SELECT.push(`structure`)
-  // if (groupByRating)        SELECT.push(`rating`)
-  // if (groupByStatus)        SELECT.push(`status`)
-  
-  let SUBSELECT = [];
-  for (by of groupBy) {
-    if      (by=="depth")         SUBSELECT.push((roundDepthBy?`ROUND ( depth/${roundDepthBy} )*${roundDepthBy} AS depth`:`depth`))
-    else if (by=="frequency")     SUBSELECT.push((roundFrequencyBy?`ROUND ( frequency/${roundFrequencyBy} )*${roundFrequencyBy} AS frequency`:`frequency`))
-    else if (by=="pixel_density")  SUBSELECT.push((roundPixelDensityBy?`ROUND ( pixel_density/${roundPixelDensityBy} )*${roundPixelDensityBy} AS pixel_density`:`pixel_density`))
-    else if (by=="structure")     SUBSELECT.push(`structure_id AS structure`)
-    else if (by=="rating")        SUBSELECT.push(`rating_operator AS rating`)
-    else if (by=="status")        SUBSELECT.push(`analysis_status AS status`)
-    else                           SUBSELECT.push(by)
-  }
-  // if (groupByDepth)         SUBSELECT.push((roundDepthBy?`ROUND ( depth/${roundDepthBy} )*${roundDepthBy} AS depth`:`depth`))
-  // if (groupByFrequency)     SUBSELECT.push((roundFrequencyBy?`ROUND ( frequency/${roundFrequencyBy} )*${roundFrequencyBy} AS frequency`:`frequency`))
-  // if (groupByPixelDensity)  SUBSELECT.push((roundPixelDensityBy?`ROUND ( pixel_density/${roundPixelDensityBy} )*${roundPixelDensityBy} AS pixel_density`:`pixel_density`))
-  // if (groupByStructure)     SUBSELECT.push(`structure_id AS structure`)
-  // if (groupByRating)        SUBSELECT.push(`rating_operator AS rating`)
-  // if (groupByStatus)        SUBSELECT.push(`analysis_status AS status`)
-  
-  let GROUP_BY = [];
-  for (by of groupBy) {
-    GROUP_BY.push(by)
-  }
-  // if (groupByDepth)         GROUP_BY.push(`depth`)
-  // if (groupByFrequency)     GROUP_BY.push(`frequency`)
-  // if (groupByPixelDensity)  GROUP_BY.push(`pixel_density`)
-  // if (groupByStructure)     GROUP_BY.push(`structure`)
-  // if (groupByRating)        GROUP_BY.push(`rating`)
-  // if (groupByStatus)        GROUP_BY.push(`status`)
-  
-  let ORDER_BY = [];
-  for (by of groupBy) {
-    if (by=="structure")          ORDER_BY.push(`structure ASC`)
-    else if (by=="rating")        ORDER_BY.push(`rating ASC`)
-    else if (by=="status")        ORDER_BY.push(`status ASC`)
-    else                           ORDER_BY.push(by+" ASC")
-  }
-  // let groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
-  // for (let gp of groupBy){
-  //   if      (gp=='depth')         ORDER_BY.push(`depth ASC`)
-  //   else if (gp=='frequency')     ORDER_BY.push(`frequency ASC`)
-  //   else if (gp=='pixel_density') ORDER_BY.push(`pixel_density ASC`)
-  //   else if (gp=='structure')     ORDER_BY.push(`structure ASC`)
-  //   else if (gp=='rating')        ORDER_BY.push(`rating ASC`)
-  //   else if (gp=='status')        ORDER_BY.push(`status ASC`)
-  // }
+
+
 
   let my_query = `
 SELECT
 ${SELECT.join(',\n')}${(SELECT.length>0?',\n':'')}
+${SELECT.map((field)=>{return `ARRAY_AGG (DISTINCT _${field}) AS ${field}s`}).join(',\n')}${(SELECT.length>0?',\n':'')}
 SUM (_frames) AS number_of_frames,
 COUNT (_file_id) AS number_of_files,
 COUNT (DISTINCT _analysis_id) AS number_of_analyses,
@@ -374,19 +388,27 @@ ARRAY_AGG (DISTINCT _operator_id) operators
 FROM
 (
   SELECT
-    ${SUBSELECT.join(',\n')}${(SUBSELECT.length>0?',\n':'')}
-    frames AS _frames,
-    file_id AS _file_id,
-    analysis_id AS _analysis_id,
-    patient_id AS _patient_id,
-    operator_id AS _operator_id
-    --analysis_status
+    ${SUBSELECT.join(',\n')}${(SUBSELECT.length>0?',':'')}
+    _frames,
+    _file_id,
+    _analysis_id,
+    _patient_id,
+    _operator_id
   FROM
-    federico_dataset--app_file_flat
-    --AND analysis_id IN ( ${federico_subset.join(',')} )
-  WHERE
-    frames IS NOT NULL
-) AS app_file_flat_rounded
+  (
+    SELECT
+      ${SUBSUBSELECT.join(',\n')}${(SUBSUBSELECT.length>0?',':'')}
+      frames AS _frames,
+      file_id AS _file_id,
+      analysis_id AS _analysis_id,
+      patient_id AS _patient_id,
+      operator_id AS _operator_id
+    FROM
+      federico_dataset--app_file_flat
+      --AND analysis_id IN ( ${federico_subset.join(',')} )
+    --WHERE frames IS NOT NULL
+  ) AS rounded
+) AS clustered
 
 --WHERE
 --depth IS NOT NULL AND
@@ -401,8 +423,6 @@ ${ORDER_BY.join(',\n')}
   `;
 
   console.log(my_query);
-
-
 
 
 
@@ -440,39 +460,13 @@ ${ORDER_BY.join(',\n')}
     array_pixel_density,
     array_depth
   `
-
-  let esempio = `
-    SELECT
-    ROUND ( depth/5 )*5 AS depth_rounded,
-    SUM (frames) AS number_of_frames,
-    COUNT (file_id) AS number_of_files,
-    COUNT (DISTINCT analysis_id) AS number_of_analyses,
-    COUNT (DISTINCT patient_id) AS number_of_patients,
-    COUNT (DISTINCT operator_id) AS number_of_operator,
-    ARRAY_AGG (DISTINCT operator_id) operators
-
-    FROM
-    app_file_flat
-
-    WHERE
-    depth IS NOT NULL AND
-    analysis_status = 2
-
-    GROUP BY
-    depth_rounded
-
-    ORDER BY
-    depth_rounded DESC
-  `;
-
-  // client = await pool.connect();
-  // query_res = await client.query(my_query)
+  
+  
+  
   query_res = await pool.query(my_query)
   .catch(err => {
     console.log(err.stack)
   })
-
-  // client.release()
   
   // for (const row of rows) {
   //     [row.structure_id, row.operator_id, row.patient_id, row.analysis_id, row.analysis_status, row.file_id, row.file_area_code, row.rating_operator]);

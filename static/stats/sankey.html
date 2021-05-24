@@ -17,9 +17,9 @@
     <option value="depth">depth</option>
     <option value="frequency">frequency</option>
     <option value="pixel_density">pixel_density</option>
-    <option value="structure" selected>structure</option>
+    <option value="structure">structure</option>
     <option value="rating">rating</option>
-    <option value="status">status</option>
+    <option value="status" selected>status</option>
     <option value="profile_scanner_brand">scanner</option>
   </select>
 
@@ -28,9 +28,9 @@
     <option value="depth">depth</option>
     <option value="frequency">frequency</option>
     <option value="pixel_density">pixel_density</option>
-    <option value="structure">structure</option>
+    <option value="structure" selected>structure</option>
     <option value="rating">rating</option>
-    <option value="status" selected>status</option>
+    <option value="status">status</option>
     <option value="profile_scanner_brand">scanner</option>
   </select>
 
@@ -72,8 +72,8 @@
   <label name="valueOf">Plot # of:</label>
   <select name="valueOf" id="valueOf">
     <option value="number_of_frames">frames</option>
-    <option value="number_of_files">files</option>
-    <option value="number_of_analyses" selected>analyses</option>
+    <option value="number_of_files" selected>files</option>
+    <option value="number_of_analyses">analyses</option>
     <option value="number_of_patients">patients</option>
     <option value="number_of_operators">operators</option>
   </select>
@@ -81,7 +81,7 @@
   <br/>
   
   <span>roundDepthBy:</span>&ensp;
-  <input name="roundDepthBy" value=20 id="roundDepthBy"/>
+  <input name="roundDepthBy" value=40 id="roundDepthBy"/>
   <span>roundFrequencyBy:</span>&ensp;
   <input name="roundFrequencyBy" value=1 id="roundFrequencyBy"/>
   <span>roundPixelDensityBy:</span>&ensp;
@@ -97,7 +97,7 @@
 
 
 
-<div id="sankey_multiple" style="width: 100%; height: 500px;"></div>
+<div id="sankey_multiple" style="width: 100%; height: 500px; overflow:visible"></div>
 
 
 
@@ -134,7 +134,7 @@ function initChart() {
     tooltip: {isHtml: true},
     width: '100%',
     sankey: {
-      iterations: 2, // use 0 to keeps label ordered
+      iterations: 200, // use 0 to keeps label ordered
       node: {
         label: {
           fontName: 'Times-Roman',
@@ -208,19 +208,28 @@ const status = {
 }
 
 const getLabel = function (field, value) {
-    let label = field+':'+value
-    if (field=='structure')
-      label = structures[value]
-    else if (field=='profile_scanner_brand')
-      label = value
-    else if (field=='status')
-      label = status[value]
-    else if (field=='frequency')
-      label = value+' Mhz'
-    else if (field=='depth')
-      label = value+' mm'
-    return label
-} 
+  let label = field+':'+value
+  if (field=='structure')
+    label = structures[value]
+  else if (field=='profile_scanner_brand')
+    label = value
+  else if (field=='status')
+    label = status[value]
+  else if (field=='frequency') {
+    let roundFrequencyBy = $('#roundFrequencyBy')[0].value
+    let from = value-roundFrequencyBy
+    let to = value+Number(roundFrequencyBy)
+    label = `[ ${from} - ${to} ] MHz`
+  }
+  else if (field=='depth') {
+    let roundDepthBy = $('#roundDepthBy')[0].value
+    let from = value-roundDepthBy
+    let to = value+Number(roundDepthBy)
+    label = `[ ${from} - ${to} ] mm`
+  }
+  // let roundPixelDensityBy = $('#roundPixelDensityBy')[0].value
+  return label
+}
 
 async function getOneToOneData(xField, yField, number_of='number_of_frames') {
 

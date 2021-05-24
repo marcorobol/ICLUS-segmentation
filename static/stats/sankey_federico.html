@@ -81,9 +81,19 @@
   <br/>
   
   <span>roundDepthBy:</span>&ensp;
-  <input name="roundDepthBy" value=40 id="roundDepthBy"/>
+  <input name="roundDepthBy" value=null id="roundDepthBy"/>
+  <span>groupDepth:</span>&ensp;
+  <input style="width: 400px;" value="[50)[60,80)[80,100](100,120](120,140)[140,180][220][305]" id="groupDepth"/>
+  
+  <br/>
+  
   <span>roundFrequencyBy:</span>&ensp;
-  <input name="roundFrequencyBy" value=1 id="roundFrequencyBy"/>
+  <input name="roundFrequencyBy" value=null id="roundFrequencyBy"/>
+  <span>groupFrequency:</span>&ensp;
+  <input style="width: 400px;" value="[2.5][3.5,4.5)[4.5,5.5)[5.5,6.5)[6.5,7.5)[10]" id="groupFrequency"/>
+
+  <br/>
+
   <span>roundPixelDensityBy:</span>&ensp;
   <input name="roundPixelDensityBy" value=20 id="roundPixelDensityBy"/>
 
@@ -97,7 +107,7 @@
 
 
 
-<div id="sankey_multiple" style="width: 100%; height: 500px;"></div>
+<div id="sankey_multiple" style="width: 100%; height: 500px; overflow:visible"></div>
 
 
 
@@ -134,7 +144,7 @@ function initChart() {
     tooltip: {isHtml: true},
     width: '100%',
     sankey: {
-      iterations: 2, // use 0 to keeps label ordered
+      iterations: 200, // use 0 to keeps label ordered
       node: {
         label: {
           fontName: 'Times-Roman',
@@ -208,18 +218,29 @@ const status = {
 }
 
 const getLabel = function (field, value) {
-    let label = field+':'+value
-    if (field=='structure')
-      label = structures[value]
-    else if (field=='profile_scanner_brand')
-      label = value
-    else if (field=='status')
-      label = status[value]
-    else if (field=='frequency')
-      label = value+' Mhz'
-    else if (field=='depth')
-      label = value+' mm'
-    return label
+  let label = field+':'+value
+  if (field=='structure')
+    label = structures[value]
+  else if (field=='profile_scanner_brand')
+    label = value
+  else if (field=='status')
+    label = status[value]
+  else if (field=='frequency') {
+    // let roundFrequencyBy = $('#roundFrequencyBy')[0].value
+    // let from = value-(roundFrequencyBy/2)
+    // let to = value+Number(roundFrequencyBy/2)
+    // label = `[ ${from} - ${to} ] MHz`
+    label = value + ' MHz'
+  }
+  else if (field=='depth') {
+    // let roundDepthBy = $('#roundDepthBy')[0].value
+    // let from = value-(roundDepthBy/2)
+    // let to = value+Number(roundDepthBy/2)
+    // label = `[ ${from} - ${to} ] mm`
+    label = value + ' mm'
+  }
+  // let roundPixelDensityBy = $('#roundPixelDensityBy')[0].value
+  return label
 } 
 
 async function getOneToOneData(xField, yField, number_of='number_of_frames') {
@@ -251,8 +272,14 @@ async function callStats({groupBy}) {
   let queries = []
 
   for (field of groupBy) {
-    if(field=="depth" || field=="frequency" || field=="pixel_density" || field=="structure" || field=="rating" || field=="status" || field=="profile_scanner_brand")
+    if(field=="pixel_density" || field=="structure" || field=="rating" || field=="status" || field=="profile_scanner_brand")
       queries.push('groupBy='+field)
+    if(field=="depth")
+      queries.push('groupBy=depth'+$('#groupDepth')[0].value)
+      // queries.push('groupBy=depth[50)[60,80)[80,100](100,120](120,140)[140,180][220][305]')//'groupBy=depth[20,60)[60,80)[80,100](100,120](120,140)[140,180][220,260][300,340]'
+    if(field=="frequency")
+      queries.push('groupBy=frequency'+$('#groupFrequency')[0].value)
+      // queries.push('groupBy=frequency[2.5][3.5,4.5)[4.5,5.5)[5.5,6.5)[6.5,7.5)[10]')
   }
   
   let roundDepthBy = $('#roundDepthBy')[0].value
