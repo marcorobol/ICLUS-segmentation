@@ -1,8 +1,5 @@
 var express = require('express');
 var router = express.Router();
-const pool = require('../pool');
-var api_crops = require('./crops');
-var api_approvals = require('./approvals');
 
 
 router.get('/', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
@@ -11,7 +8,7 @@ router.get('/', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
   let where = req.query.where
   where = (Array.isArray(where)?where:[where])
     
-  const client = await pool.connect();
+  const client = await req.pool.connect();
   let query = `SELECT * FROM federico_dataset ${where?'WHERE '+where.join(' AND '):''} `;
   const query_res = await client.query(query)
   .catch(err => {

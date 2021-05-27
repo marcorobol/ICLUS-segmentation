@@ -1,6 +1,5 @@
 var express = require('express');
 var router = express.Router();
-const pool = require('../pool')
 
 
 
@@ -463,7 +462,7 @@ ${ORDER_BY.join(',\n')}
   
   
   
-  query_res = await pool.query(my_query)
+  query_res = await req.pool.query(my_query)
   .catch(err => {
     console.log(err.stack)
   })

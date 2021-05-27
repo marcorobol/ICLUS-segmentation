@@ -1,4 +1,4 @@
-unzippedFolder = '..\\ICLUS-crawler\\unzipped\\'
+// unzippedFolder = '..\\ICLUS-crawler\\unzipped\\'
 
 
-module.exports = {unzippedFolder};
+module.exports = {};

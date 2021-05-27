@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<body>
+
+<h1>Iclus 2021 data-set platform</h1>
+
+<a href="./stats">Bar chart</a>
+<a href="./stats/sankey.html">Sankey diagram</a>
+<a href="./crop_image/?patientId=1049&analysisId=1125&area_code=1">./crop_image/?patientId=1049&analysisId=1125&area_code=1</a>
+
+<h2 id="videosTitle">Videos:</h2>
+
+<button type="button" onclick="refresh()">Update</button>
+
+<table id="videos">
+  <thead>
+    <tr>
+      <th>operator <br/> <select id="operator_id" ></select> </th>
+      <th>patient <br/> <select id="patient_id" ></select> </th>
+      <th>analysis <br/> <select id="analysis_id" ></select> </th>
+      <th>file </th>
+      <th>status <br/> <select id="analysis_status" ></select> </th>
+      <th>rating <br/> <select id="rating_operator" ></select> </th>
+      <th>depth <br/> <select id="depth" ></select> </th>
+      <th>frequency <br/> <select id="frequency" ></select> </th>
+      <th>focalPoint <br/> <select id="focal_point" ></select> </th>
+      <th>pixel_density <br/> <select id="pixel_density" ></select> </th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="script.js"></script> 
+    
+</body>
+
+</html>

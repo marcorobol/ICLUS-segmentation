@@ -1,6 +1,5 @@
 var express = require('express');
 var router = express.Router();
-const pool = require('../pool');
 var api_crops = require('./crops');
 var api_approvals = require('./approvals');
 
@@ -11,7 +10,7 @@ router.get('/', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
   let where = req.query.where
   where = (Array.isArray(where)?where:[where])
     
-  const client = await pool.connect();
+  const client = await req.pool.connect();
   let query = `SELECT * FROM app_file_flat ${where?'WHERE '+where.join(' AND '):''} `;
   const query_res = await client.query(query)
   .catch(err => {
@@ -38,7 +37,7 @@ router.use('/:video_ref/crops', api_crops);
 router.use('/:video_ref/approvals', api_approvals);
 
 router.get('/:video_ref', async function(req, res) {
-  let client = await pool.connect();
+  let client = await req.pool.connect();
   let query = `SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)='${req.params.video_ref}'`
   let query_res = await client.query(query)
   .catch(err => {
