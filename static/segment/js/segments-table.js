@@ -64,15 +64,16 @@ Vue.component('segment-table', {
             segments: []
         }
     },
+    props: ['segmentationTool', 'current_video_time'],
     mounted () {
         fetchSegments().then(response => (this.segments = response))
     },
     methods: {
         load_seg: function (seg) {
             videojs('my-video').currentTime(seg.timestamp)
-            console.log(this.$root.$refs)
-            this.$root.$refs.segmentation_tool.clearPoints();
-            this.$root.$refs.segmentation_tool.addPoints(seg.points);
+            console.log(this)
+            this.segmentationTool.clearPoints();
+            this.segmentationTool.addPoints(seg.points);
             this.rate = seg.rate;
         },
         delete_seg: function (seg) {
@@ -83,7 +84,7 @@ Vue.component('segment-table', {
             }
         },
         clear_seg: function () {
-            this.$root.$refs.segmentation_tool.clearPoints();
+            this.segmentationTool.clearPoints();
             this.$refs.form.reset()
         },
         create_seg: async function () {
@@ -91,13 +92,13 @@ Vue.component('segment-table', {
                 let s = {
                     'analysis_id': urlParams.analysis_id,
                     'area_code': urlParams.area_code,
-                    'timestamp': this.$root.current_video_time,//$('#time')[0].value,
+                    'timestamp': this.current_video_time,//$('#time')[0].value,
                     'rate': this.rate,
-                    'points': this.$root.$refs.segmentation_tool.getPoints()
+                    'points': this.segmentationTool.getPoints() //this.$root.$refs.segmentation_tool
                 }
                 s = (await postSegmentation(s)).rows[0];
                 this.segments.push(s);
-                this.$root.$refs.segmentation_tool.clearPoints();
+                this.segmentationTool.clearPoints();
                 this.$refs.form.reset();
             }
         }

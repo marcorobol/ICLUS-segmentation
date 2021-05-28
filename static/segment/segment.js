@@ -78,6 +78,7 @@ globalThis.segment = {
         },
         croppingToolMyEvent: function (bounds) {
             this.cropping_bounds = bounds
+            // this.$refs.segmentation_tool.setCroppingBounds(bounds)
         },
         confirmMetadata: function () {
             console.log("confirmMetadata")
@@ -215,7 +216,7 @@ globalThis.segment = {
                                         <v-card
                                             class="mb-12"
                                         >
-                                            <segment-table></segment-table>
+                                            <segment-table v-bind:current_video_time="current_video_time" v-bind:segmentation-tool="$refs.segmentation_tool"></segment-table>
                                         </v-card>
                                         
                                     </v-stepper-content>
@@ -242,7 +243,7 @@ globalThis.segment = {
 
                             <cropping-tool v-if="e1 == 2" @myevent="croppingToolMyEvent" ref="cropping_tool"></cropping-tool>
 
-                            <segmentation-tool v-if="e1 == 3" ref="segmentation_tool"></segmentation-tool>
+                            <segmentation-tool v-if="e1 == 3" ref="segmentation_tool" v-bind:cropping-bounds="cropping_bounds"></segmentation-tool>
 
                             <video
                                 id="my-video"

@@ -69,14 +69,27 @@ Vue.component('segmentation-tool', {
             ctx: null,
             selection: null,
             drag: false,
-            currentHandle: null
+            currentHandle: null,
+            croppingPath: new Path2D()
         }
     },
+    props: ['croppingBounds'],
     mounted () {
         canvas = this.canvas = this.$el.querySelector("canvas");
         this.ctx = this.canvas.getContext("2d");
         this.selection = new SelectionFigure();
-        
+
+        {
+            let b = this.croppingBounds
+            this.croppingPath = new Path2D();
+            this.croppingPath.moveTo(b.x+(b.w*b.th), b.y); // top left
+            this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+(b.h*b.ch*2), b.x+b.w-(b.w*b.th), b.y) // center top -> top right
+            // ctx.lineTo(b.x+b.w-(b.w*b.th), b.y); // top right
+            this.croppingPath.lineTo(b.x+b.w, b.y+(b.h*b.bh)); // bottom right
+            this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+b.h+(b.h-(b.h*b.bh)), b.x, b.y+(b.h*b.bh)) // bottom left
+            this.croppingPath.closePath();
+        }
+
         // canvas.addEventListener('mousedown', this.mouseDown, false);
         document.addEventListener('mousemove', this.mouseMove, false);
         // document.addEventListener('mouseup', this.mouseUp, false);
@@ -101,15 +114,17 @@ Vue.component('segmentation-tool', {
             var pos = this.getCanvasRelativePosition(e.clientX,e.clientY)
 
             if (this.drag) {
-                this.currentHandle.x = pos.x
-                this.currentHandle.y = pos.y
+                if (this.ctx.isPointInPath(this.croppingPath, pos.x, pos.y)) {
+                    this.currentHandle.x = pos.x
+                    this.currentHandle.y = pos.y
+                }
             } else {
                 this.currentHandle = this.selection.getHandle(pos.x, pos.y)
                 if (this.currentHandle!=null) {
                     this.currentHandle.selected = true
                     this.selection.nextHandle.active = false
                 }
-                else if ( !this.inCanvas(pos.x, pos.y) ) {
+                else if ( !this.inCanvas(pos.x, pos.y) || !this.ctx.isPointInPath(this.croppingPath, pos.x, pos.y) ) {
                     this.selection.nextHandle.active = false
                 }
                 else {
@@ -126,7 +141,7 @@ Vue.component('segmentation-tool', {
             if (this.drag) {
                 this.drag = false;
             }
-            else if (this.selection.nextHandle!=null) {
+            else if (this.ctx.isPointInPath(this.croppingPath, pos.x, pos.y) && this.selection.nextHandle!=null) {
                 this.selection.handles.push( new Handle(pos.x, pos.y) );
             }
         },
@@ -144,10 +159,7 @@ Vue.component('segmentation-tool', {
             if (y < 0) y = 0;
             if (x > w) x = w;
             if (y > h) y = h;
-            return {
-                x: x,
-                y: y,
-            };
+            return {x, y};
         },
         getPoints: function () {
             return this.selection.handles.map( (e)=>{return {x:e.x, y:e.y}} )
@@ -165,6 +177,8 @@ Vue.component('segmentation-tool', {
         },
         draw: function (e) {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.strokeStyle = "red";
+            this.ctx.stroke(this.croppingPath)
             this.selection.draw(this.ctx);
         }
     },
