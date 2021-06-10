@@ -3,6 +3,48 @@ const express = require('express')
 var router = express.Router()
 const fs = require('fs')
 const hbjs = require('handbrake-js')
+const ffmpeg = require('fluent-ffmpeg')
+
+
+
+router.use('/:patientId/:analysisId/:area_code/mp4/metadata', async function(req, res) {
+  let patientId = req.params.patientId;
+  let analysisId = req.params.analysisId;
+  let area_code = req.params.area_code;
+  
+  let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
+  let fileName = 'video_'+analysisId+'_'+area_code
+  let mp4Path = folder+fileName+'.mp4'
+
+  let metadata = await new Promise( (res) => ffmpeg.ffprobe( mp4Path, function(err, metadata) {
+    //console.dir(metadata); // all metadata
+    if(metadata && metadata.streams && metadata.streams[0])
+        res(metadata.streams[0]);
+    else
+        res(null)
+  }));
+  res.json(metadata)
+});
+
+
+
+router.use('/:patientId/:analysisId/:area_code/raw/metadata', async function(req, res) {
+  let patientId = req.params.patientId;
+  let analysisId = req.params.analysisId;
+  let area_code = req.params.area_code;
+  
+  let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
+  let rawFileName = findFile( folder, 'video_'+analysisId+'_'+area_code )
+
+  let metadata = await new Promise( (res) => ffmpeg.ffprobe( folder+rawFileName, function(err, metadata) {
+    //console.dir(metadata); // all metadata
+    if(metadata && metadata.streams && metadata.streams[0])
+        res(metadata.streams[0]);
+    else
+        res(null)
+  }));
+  res.json(metadata)
+});
 
 
 

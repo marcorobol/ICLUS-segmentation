@@ -23,6 +23,7 @@ globalThis.segment = {
             analysis_id: urlParams.analysis_id,
             area_code: urlParams.area_code,
             metadata: [],
+            FPS: null,
             cropping_bounds: {x:0},
             segmentations_stats: {"null":0, 0:0, 1:0, 2:0, 3:0},
             current_video_time: 0
@@ -44,6 +45,7 @@ globalThis.segment = {
     //     });
     // },
     async mounted () {
+        console.log(this.$refs)
 
         let vue_this = this;
         videojs('my-video').ready( function () {
@@ -51,6 +53,15 @@ globalThis.segment = {
                 vue_this.current_video_time = this.currentTime()
             })
         });
+        fetchRawMetadata().then( response => {
+            console.log('Raw matadata:')
+            console.log(response)
+        })
+        fetchMp4Metadata().then( response => {
+            console.log('Mp4 matadata:')
+            console.log(response)
+            this.FPS = Function(`'use strict'; return (${response.r_frame_rate})`)()
+        })
 
         const statusMap = {
             1: 'Suspect',
@@ -59,6 +70,8 @@ globalThis.segment = {
             4: 'Post covid'
         }
         fetchMetadata().then( response => {
+            console.log('Matadata:')
+            console.log(response)
             this.metadata = response
             this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
         })
@@ -145,7 +158,7 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
             
-                                            <metadata-form ref="metadata_form"></metadata-form>
+                                            <metadata-form ref="metadata_form" v-bind:metadata="metadata"></metadata-form>
                                     
                                         </v-card>
                                 
@@ -231,8 +244,8 @@ globalThis.segment = {
 
                     </div>
 
-                    <div class="canvas-container" style="padding-bottom: 60px;">
-                        <span class="wrapper" style="top: 60px; position: relative">
+                    <div class="canvas-container" style="padding-bottom: 80px;">
+                        <span class="wrapper" style="top: 80px; position: relative">
 
                             <img
                                 v-if="e1 == 1"
@@ -241,33 +254,20 @@ globalThis.segment = {
                                 style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"
                             />
 
-                            <cropping-tool v-if="e1 == 2" @myevent="croppingToolMyEvent" ref="cropping_tool"></cropping-tool>
+                            <cropping-tool v-show="e1 == 2" @myevent="croppingToolMyEvent" ref="cropping_tool"></cropping-tool>
 
                             <segmentation-tool v-if="e1 == 3" ref="segmentation_tool" v-bind:cropping-bounds="cropping_bounds"></segmentation-tool>
 
-                            <video
-                                id="my-video"
-                                class="video-js vjs-theme-fantasy"
-                                controls
-                                preload="auto"
-                                width="880"
-                                data-setup="{}"
-                                muted
-                                autoplay
+                            <video-player
+                                id="my-video-old"
+                                v-bind:FPS="FPS"
                             >
                                 <source
                                     v-bind:src="'../mp4/'+patient_id+'/'+analysis_id+'/'+area_code+'/video'"
                                     type="video/mp4"
                                     preload autoplay
                                 />
-                                <p class="vjs-no-js">
-                                    To view this video please enable JavaScript, and consider upgrading to a
-                                    web browser that
-                                    <a href="https://videojs.com/html5-video-support/" target="_blank">
-                                        supports HTML5 video
-                                    </a>
-                                </p>
-                            </video>
+                            </video-player>
 
                             <!-- <div class="positioner" style="z-index: 2; position: absolute; top: 0px;"> -->
                             <!--    <div style="padding-top: 74.9%;"> --><!-- padding-top must match the aspect ratio of your image = height / width * 100% -->

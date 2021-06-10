@@ -86,3 +86,15 @@ async function fetchApprovals() {
         .then((resp) => resp.json()) // Transform the data into json
         .catch( error => console.error(error) ); // If there is any error you will catch them here
 }
+
+async function fetchRawMetadata() {
+    return query_res = await fetch(`/mp4/${urlParams.patient_id}/${urlParams.analysis_id}/${urlParams.area_code}/raw/metadata`)
+        .then((resp) => resp.json()) // Transform the data into json
+        .catch( error => console.error(error) ); // If there is any error you will catch them here
+}
+
+async function fetchMp4Metadata() {
+    return query_res = await fetch(`/mp4/${urlParams.patient_id}/${urlParams.analysis_id}/${urlParams.area_code}/mp4/metadata`)
+        .then((resp) => resp.json()) // Transform the data into json
+        .catch( error => console.error(error) ); // If there is any error you will catch them here
+}
