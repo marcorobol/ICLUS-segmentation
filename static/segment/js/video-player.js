@@ -61,41 +61,46 @@ Vue.component('video-player', {
     mounted: function() {
 
 		var vue_this = this
+		var html5_player = this.html5_player = this.$el //vue_this.$refs["my-video"]
+		var player = this.player = videojs(this.$el)
 		
+		player.ready( function () { // this is player returned by videojs(this.$el)
+			
+			html5_player.playbackRate = .1
+
+			this.offset({
+				start: 2,
+				end: 8,
+				restart_beginning: false //Should the video go to the beginning when it ends
+			});
+			
+			this.on('timeupdate', function () {
+				vue_this.current_video_time = this.currentTime()
+			})
+		})
+
+		setInterval(
+			function() {
+				let video = html5_player
+
+				var fixedTimecode = video.currentTime;
+				fixedTimecode = parseFloat(fixedTimecode.toFixed(2));
+
+				var SMPTE_time = secondsToTimecode(video.currentTime, vue_this.FPS);
+				$("#currentTimeCode").html(SMPTE_time);
+
+				var videoInfo = "<b>Video info:</b><br/>";
+				videoInfo += "currentTime: " + video.currentTime + "<br/>";
+				videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
+				videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
+				$("#videoInfo").html(videoInfo);
+			},
+			vue_this.FPS
+		);
+
 		this.$nextTick(function () {
 			// Code that will run only after the
 			// entire view has been rendered
-
-			videojs('my-video').ready( function () {
-
-				this.on('timeupdate', function () {
-					vue_this.current_video_time = this.currentTime()
-				})
-
-				vue_this.$refs["my-video"].playbackRate = .1
-	
-				// let updateReadyStateInterval = setInterval(this.updateReadyState(), 100);
-				setInterval(
-					function() {
-						let video = vue_this.$refs["my-video"]
-
-						var fixedTimecode = video.currentTime;
-						fixedTimecode = parseFloat(fixedTimecode.toFixed(2));
-
-						var SMPTE_time = secondsToTimecode(video.currentTime, vue_this.FPS);
-						$("#currentTimeCode").html(SMPTE_time);
-
-						var videoInfo = "<b>Video info:</b><br/>";
-						videoInfo += "currentTime: " + video.currentTime + "<br/>";
-						videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
-						videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
-						$("#videoInfo").html(videoInfo);
-					},
-					vue_this.FPS
-				);
-	
-			});
-
 		})
 
     },
@@ -146,17 +151,17 @@ Vue.component('video-player', {
 		},
 
 		updateVideoCurrentTimeCode: function() {
-			console.log(this.$refs)
-			let video = this.$refs.my-video
+			
+			let video = this.$el
 
-			var fixedTimecode = video.currentTime;
-			fixedTimecode = parseFloat(fixedTimecode.toFixed(2));
+			var currentTime = video.currentTime;
+			var fixedTimecode = parseFloat(video.currentTime.toFixed(2));
 
 			var SMPTE_time = secondsToTimecode(video.currentTime, FPS);
 			$("#currentTimeCode").html(SMPTE_time);
 
 			var videoInfo = "<b>Video info:</b><br/>";
-			videoInfo += "currentTime: " + video.currentTime + "<br/>";
+			videoInfo += "currentTime: " + currentTime + "<br/>";
 			videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
 			videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
 			$("#videoInfo").html(videoInfo);
@@ -165,7 +170,6 @@ Vue.component('video-player', {
 			//var video_src = "<b>video source used:</b><br/>" + video.source.src;
 			//$("#videoSource").html = video_src;
 			
-
 		},
 
 		seekToTimecode: function(hh_mm_ss_ff, fps) {
@@ -186,13 +190,12 @@ Vue.component('video-player', {
 
 
 		togglePlay: function() {
-			let video = this
-			video.pause();
+			this.pause();
 		},
 
 
 		seekFrames: function(nr_of_frames) {
-			const video = this.$refs["my-video"]
+			const video = this.html5_player //this.$refs["my-video"]
 			const fps = this.FPS
 
 			this.clickCounter++;
@@ -235,7 +238,7 @@ Vue.component('video-player', {
 			
 			found_frame_nr = Number(found_frame_split[3]);
 			
-			//console.log("found_frame_nr: " + found_frame_nr + " (found_frame: "+found_frame+")");
+			console.log("found_frame_nr: " + found_frame_nr + " (found_frame: "+found_frame+")");
 			
 			var fontColor = "#000";
 			if ( found_frame_nr+1 != this.clickCounter) {
@@ -253,35 +256,25 @@ Vue.component('video-player', {
 	// @loadeddata="onLoadedData"
 	// @timeupdate="onTimeUpdate"
     template: `
-		<div style="width: auto; height: auto">
-			<div style="top: -80px !important; position: absolute;">
-				<input style="position: relative;" id="minus1" type="button" value="<| -1 frame" @click="seekFrames(-1)">
-				<input style="position: relative;" id="plus1" type="button" value="|> +1 frame" @click="seekFrames(1)">
-				<div id="seekInfo"></div>
-			</div>
-			<video
-				id="my-video"
-				ref="my-video"
-				class="video-js vjs-theme-fantasy"
-				controls
-				preload="auto"
-				width="880"
-				data-setup="{}"
-				muted
-				autoplay
-				
-
-				@play="onPlay"
-			>
-				<slot></slot>
-				<p class="vjs-no-js">
-					To view this video please enable JavaScript, and consider upgrading to a
-					web browser that
-					<a href="https://videojs.com/html5-video-support/" target="_blank">
-						supports HTML5 video
-					</a>
-				</p>
-			</video>
-		</div>
+		<video
+			class="video-js vjs-theme-fantasy"
+			controls
+			preload="auto"
+			width="880"
+			data-setup="{}"
+			muted
+			autoplay
+			
+			@play="onPlay"
+		>
+			<slot></slot>
+			<p class="vjs-no-js">
+				To view this video please enable JavaScript, and consider upgrading to a
+				web browser that
+				<a href="https://videojs.com/html5-video-support/" target="_blank">
+					supports HTML5 video
+				</a>
+			</p>
+		</video>
     `
 });

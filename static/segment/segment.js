@@ -25,8 +25,8 @@ globalThis.segment = {
             metadata: [],
             FPS: null,
             cropping_bounds: {x:0},
-            segmentations_stats: {"null":0, 0:0, 1:0, 2:0, 3:0},
-            current_video_time: 0
+            current_video_time: 0,
+            video_duration: 0
         }
     },
     // created() {
@@ -45,14 +45,13 @@ globalThis.segment = {
     //     });
     // },
     async mounted () {
-        console.log(this.$refs)
 
         let vue_this = this;
-        videojs('my-video').ready( function () {
-            this.on('timeupdate', function () {
-                vue_this.current_video_time = this.currentTime()
-            })
-        });
+        // videojs('my-video').ready( function () {
+        //     this.on('timeupdate', function () {
+        //         vue_this.current_video_time = this.currentTime()
+        //     })
+        // });
         fetchRawMetadata().then( response => {
             console.log('Raw matadata:')
             console.log(response)
@@ -76,12 +75,16 @@ globalThis.segment = {
             this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
         })
         
-        query_res = await fetch(`../api/segmentations/stats`)
-            .then((resp) => resp.json()) // Transform the data into json
-            .catch( error => console.error(error) ); // If there is any error you will catch them here
-        for (r of query_res) {
-            this.segmentations_stats[r.rate] = r.count
-        }
+        this.$refs.my_video.player.offset({
+            start: 0,
+            end: 10,
+            restart_beginning: false //Should the video go to the beginning when it ends
+        });
+
+        this.$refs.my_video.player.ready( () => {
+            console.log(this.$refs.my_video.player)
+            console.log(this.$refs.my_video.html5_player.duration)
+        })
 
     },
     methods: {
@@ -158,7 +161,12 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
             
-                                            <metadata-form ref="metadata_form" v-bind:metadata="metadata"></metadata-form>
+                                            <metadata-form
+                                                ref="metadata_form"
+                                                v-bind:metadata="metadata"
+                                                v-bind:video_duration="video_duration"
+                                            >
+                                            </metadata-form>
                                     
                                         </v-card>
                                 
@@ -244,7 +252,16 @@ globalThis.segment = {
 
                     </div>
 
-                    <div class="canvas-container" style="padding-bottom: 80px;">
+                    <div class="canvas-container" style="padding-bottom: 80px; display: grid">
+
+                        <div>
+                            <div id="seekInfo"></div>
+
+                            <v-btn @click="$refs.my_video.seekFrames(-1)"> <| -1 frame </v-btn>
+                            <span id="currentTimeCode"></span>
+                            <v-btn @click="$refs.my_video.seekFrames(1)"> |> +1 frame </v-btn>
+                        </div>
+
                         <span class="wrapper" style="top: 80px; position: relative">
 
                             <img
@@ -260,6 +277,7 @@ globalThis.segment = {
 
                             <video-player
                                 id="my-video-old"
+                                ref="my_video"
                                 v-bind:FPS="FPS"
                             >
                                 <source
