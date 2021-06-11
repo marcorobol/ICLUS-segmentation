@@ -58,11 +58,15 @@ Vue.component('video-player', {
         }
     },
     props: ['segmentation_id', 'analysis_id', 'area_code', 'FPS'],
+    emits: [ 'ready' ],
     mounted: function() {
 
 		var vue_this = this
 		var html5_player = this.html5_player = this.$el //vue_this.$refs["my-video"]
 		var player = this.player = videojs(this.$el)
+
+		// redirect videojs ready event to outside
+		player.ready( function () { vue_this.$emit("ready",this) })
 		
 		player.ready( function () { // this is player returned by videojs(this.$el)
 			

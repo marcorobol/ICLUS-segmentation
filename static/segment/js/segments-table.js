@@ -64,14 +64,13 @@ Vue.component('segment-table', {
             segments: []
         }
     },
-    props: ['segmentationTool', 'current_video_time'],
+    props: ['segmentationTool', 'player'],
     mounted () {
         fetchSegments().then(response => (this.segments = response))
     },
     methods: {
         load_seg: function (seg) {
-            videojs('my-video').currentTime(seg.timestamp)
-            console.log(this)
+            this.player.currentTime(seg.timestamp) //videojs('my-video').currentTime(seg.timestamp)
             this.segmentationTool.clearPoints();
             this.segmentationTool.addPoints(seg.points);
             this.rate = seg.rate;
@@ -92,7 +91,7 @@ Vue.component('segment-table', {
                 let s = {
                     'analysis_id': urlParams.analysis_id,
                     'area_code': urlParams.area_code,
-                    'timestamp': this.current_video_time,//$('#time')[0].value,
+                    'timestamp': this.player.currentTime(), //this.current_video_time, //$('#time')[0].value,
                     'rate': this.rate,
                     'points': this.segmentationTool.getPoints() //this.$root.$refs.segmentation_tool
                 }

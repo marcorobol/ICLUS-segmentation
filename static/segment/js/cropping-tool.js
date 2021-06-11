@@ -1,6 +1,6 @@
 
 
-var SelectionBox = function( wrapper, callback, initialBounds={} ) {
+var SelectionBox = function( wrapper, atEndMove, initialBounds={} ) {
 
     if(typeof wrapper==="undefined" || wrapper==null){
         console.error("no wrapper specified")
@@ -144,13 +144,13 @@ var SelectionBox = function( wrapper, callback, initialBounds={} ) {
                         dx=-f.bounds.x;
                     }
                     if(f.bounds.x+f.bounds.w+dx>canvas.width){
-                        dx=f.bounds.x;
+                        dx=canvas.width-f.bounds.w-f.bounds.x; //f.bounds.x
                     }
                     if(f.bounds.y+dy<0){
                         dy=-f.bounds.y;
                     }
                     if(f.bounds.y+f.bounds.h+dy>canvas.height){
-                        dy=f.bounds.y;
+                        dy=canvas.height-f.bounds.h-f.bounds.y; //f.bounds.y
                     }
                     f.movingBounds.x=f.bounds.x+dx;
                     f.movingBounds.y=f.bounds.y+dy;
@@ -297,6 +297,7 @@ var SelectionBox = function( wrapper, callback, initialBounds={} ) {
                 this.bounds=Object.assign({}, this.movingBounds);
                 this.movingBounds=null;
             }
+            atEndMove(this.bounds)
         }.bind(this);
 
     }
@@ -434,7 +435,8 @@ var SelectionBox = function( wrapper, callback, initialBounds={} ) {
         // $("#th")[0].value = b.th
         // $("#bh")[0].value = b.bh
         // $("#ch")[0].value = b.ch
-        callback(b)
+
+        // callback(b)
     }
     draw();
     
@@ -455,16 +457,13 @@ Vue.component('cropping-tool', {
             // x,y,w,h,th,bh,ch : null
         }
     },
-    emits: [ 'myevent' ],
+    emits: [ 'bounds-update' ],
     async mounted () {
         var response = await fetchCrops();
         initialBounds = (response.length>0?response[response.length-1].crop_bounds:{})
-        this.selectionBox = SelectionBox( this.$el, (bounds)=>{ this.$emit('myevent', bounds) }, initialBounds );
+        this.selectionBox = SelectionBox( this.$el, (bounds)=>{ this.$emit('bounds-update', bounds) }, initialBounds );
     },
     methods: {
-        callback: function (bounds) {
-            this.$emit('myevent', bounds)
-        }
     },
     template: `
         <div class="positioner" style="z-index: 2; position: absolute; top: 0px;">

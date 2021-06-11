@@ -74,13 +74,11 @@ Vue.component('segmentation-tool', {
         }
     },
     props: ['croppingBounds'],
-    mounted () {
-        canvas = this.canvas = this.$el.querySelector("canvas");
-        this.ctx = this.canvas.getContext("2d");
-        this.selection = new SelectionFigure();
-
-        {
-            let b = this.croppingBounds
+    watch: { 
+        croppingBounds: function(croppingBounds, oldCroppingBounds) { // watch it
+            console.log(croppingBounds)
+            
+            let b = croppingBounds
             this.croppingPath = new Path2D();
             this.croppingPath.moveTo(b.x+(b.w*b.th), b.y); // top left
             this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+(b.h*b.ch*2), b.x+b.w-(b.w*b.th), b.y) // center top -> top right
@@ -88,7 +86,13 @@ Vue.component('segmentation-tool', {
             this.croppingPath.lineTo(b.x+b.w, b.y+(b.h*b.bh)); // bottom right
             this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+b.h+(b.h-(b.h*b.bh)), b.x, b.y+(b.h*b.bh)) // bottom left
             this.croppingPath.closePath();
-        }
+      }
+    },
+    emits: [ 'update' ],
+    mounted () {
+        canvas = this.canvas = this.$el.querySelector("canvas");
+        this.ctx = this.canvas.getContext("2d");
+        this.selection = new SelectionFigure();
 
         // canvas.addEventListener('mousedown', this.mouseDown, false);
         document.addEventListener('mousemove', this.mouseMove, false);
@@ -117,6 +121,7 @@ Vue.component('segmentation-tool', {
                 if (this.ctx.isPointInPath(this.croppingPath, pos.x, pos.y)) {
                     this.currentHandle.x = pos.x
                     this.currentHandle.y = pos.y
+                    this.$emit('update', this.getPoints())
                 }
             } else {
                 this.currentHandle = this.selection.getHandle(pos.x, pos.y)
@@ -143,6 +148,7 @@ Vue.component('segmentation-tool', {
             }
             else if (this.ctx.isPointInPath(this.croppingPath, pos.x, pos.y) && this.selection.nextHandle!=null) {
                 this.selection.handles.push( new Handle(pos.x, pos.y) );
+                this.$emit('update', this.getPoints())
             }
         },
         getCanvasRelativePosition: function (x, y) {

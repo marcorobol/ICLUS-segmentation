@@ -26,7 +26,9 @@ globalThis.segment = {
             FPS: null,
             cropping_bounds: {x:0},
             current_video_time: 0,
-            video_duration: 0
+            video_duration: 0,
+            segmentation_tool: null,
+            player: null
         }
     },
     // created() {
@@ -47,18 +49,12 @@ globalThis.segment = {
     async mounted () {
 
         let vue_this = this;
-        // videojs('my-video').ready( function () {
-        //     this.on('timeupdate', function () {
-        //         vue_this.current_video_time = this.currentTime()
-        //     })
-        // });
+
         fetchRawMetadata().then( response => {
-            console.log('Raw matadata:')
-            console.log(response)
+            console.log('Raw matadata:', response)
         })
         fetchMp4Metadata().then( response => {
-            console.log('Mp4 matadata:')
-            console.log(response)
+            console.log('Mp4 matadata:', response)
             this.FPS = Function(`'use strict'; return (${response.r_frame_rate})`)()
         })
 
@@ -69,8 +65,7 @@ globalThis.segment = {
             4: 'Post covid'
         }
         fetchMetadata().then( response => {
-            console.log('Matadata:')
-            console.log(response)
+            console.log('Matadata:', response)
             this.metadata = response
             this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
         })
@@ -81,21 +76,26 @@ globalThis.segment = {
             restart_beginning: false //Should the video go to the beginning when it ends
         });
 
-        this.$refs.my_video.player.ready( () => {
-            console.log(this.$refs.my_video.player)
-            console.log(this.$refs.my_video.html5_player.duration)
-        })
+        // this.$refs.my_video.player.ready( () => {
+        //     console.log("my_video", this.$refs.my_video)
+        //     console.log("player", this.$refs.my_video.player)
+        //     console.log("html5_player", this.$refs.my_video.html5_player)
+        //     this.player = this.$refs.my_video.player
+        // })
 
     },
     methods: {
         changeStep: function (step) {
-            console.log(step)
-
+            if(step==3) {
+                console.log(this.$refs)
+                console.log(this.$refs["segmentation_tool"])
+                this.segmentation_tool = this.$refs["segmentation_tool"]
+            }
         },
-        croppingToolMyEvent: function (bounds) {
-            this.cropping_bounds = bounds
-            // this.$refs.segmentation_tool.setCroppingBounds(bounds)
-        },
+        // croppingToolMyEvent: function (bounds) {
+        //     this.cropping_bounds = bounds
+        //     // this.$refs.segmentation_tool.setCroppingBounds(bounds)
+        // },
         confirmMetadata: function () {
             console.log("confirmMetadata")
             this.$refs.metadata_form.confirm()
@@ -237,7 +237,11 @@ globalThis.segment = {
                                         <v-card
                                             class="mb-12"
                                         >
-                                            <segment-table v-bind:current_video_time="current_video_time" v-bind:segmentation-tool="$refs.segmentation_tool"></segment-table>
+                                            <segment-table
+                                                v-bind:current_video_time="current_video_time"
+                                                v-bind:segmentation-tool="segmentation_tool"
+                                                v-bind:player="player"
+                                            ></segment-table>
                                         </v-card>
                                         
                                     </v-stepper-content>
@@ -271,14 +275,22 @@ globalThis.segment = {
                                 style="width: 880px; position: absolute; z-index: 1; max-height: none !important;"
                             />
 
-                            <cropping-tool v-show="e1 == 2" @myevent="croppingToolMyEvent" ref="cropping_tool"></cropping-tool>
+                            <cropping-tool
+                                v-show="e1 == 2"
+                                v-on:bounds-update="cropping_bounds = $event"
+                            ></cropping-tool>
 
-                            <segmentation-tool v-if="e1 == 3" ref="segmentation_tool" v-bind:cropping-bounds="cropping_bounds"></segmentation-tool>
+                            <segmentation-tool
+                                v-show="e1 == 3"
+                                ref="segmentation_tool"
+                                v-bind:cropping-bounds="cropping_bounds"
+                            ></segmentation-tool>
 
                             <video-player
                                 id="my-video-old"
                                 ref="my_video"
                                 v-bind:FPS="FPS"
+                                v-on:ready="player = $event"
                             >
                                 <source
                                     v-bind:src="'../mp4/'+patient_id+'/'+analysis_id+'/'+area_code+'/video'"
