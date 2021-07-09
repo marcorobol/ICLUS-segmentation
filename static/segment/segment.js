@@ -23,13 +23,24 @@ globalThis.segment = {
             analysis_id: urlParams.analysis_id,
             area_code: urlParams.area_code,
             metadata: [],
+            video: {},
             FPS: null,
             cropping_bounds: {x:0},
-            current_video_time: 0,
+            video_current_time: 0,
             video_duration: 0,
+            video_trim: [0,0],
             segmentation_tool: null,
             player: null
         }
+    },
+	
+    watch: {
+        video_duration: function (duration) {
+            this.video_trim = [0, duration]
+        },
+        // video_trim: function (val) {
+        //     console.log("videoTrimed at " + val)
+        // }
     },
     // created() {
     //     var scripts = [
@@ -70,12 +81,6 @@ globalThis.segment = {
             this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
         })
         
-        this.$refs.my_video.player.offset({
-            start: 0,
-            end: 10,
-            restart_beginning: false //Should the video go to the beginning when it ends
-        });
-
         // this.$refs.my_video.player.ready( () => {
         //     console.log("my_video", this.$refs.my_video)
         //     console.log("player", this.$refs.my_video.player)
@@ -161,12 +166,85 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
             
-                                            <metadata-form
+                                            <metadata-form-mo
                                                 ref="metadata_form"
                                                 v-bind:metadata="metadata"
                                                 v-bind:video_duration="video_duration"
+
+                                                v-on:update:video_trim="video_trim = $event"
                                             >
-                                            </metadata-form>
+                                            </metadata-form-mo>
+
+                                            <form>
+            
+                                                <v-text-field
+                                                    label="Depth"
+                                                    v-bind:value="metadata.depth"
+                                                ></v-text-field>
+                                                            
+                                                <v-text-field
+                                                    label="Frequency"
+                                                    v-bind:value="metadata.frequency"
+                                                ></v-text-field>
+                                                                        
+                                                <v-text-field
+                                                    label="Focal point"
+                                                    v-bind:value="metadata.focal_point"
+                                                ></v-text-field>
+                                                            
+                                                <v-text-field
+                                                    label="Pixel density"
+                                                    v-bind:value="metadata.pixel_density"
+                                                ></v-text-field>
+
+                                                <v-btn
+                                                    v-on:click="$set(video_trim, 0, video_current_time)"
+                                                >
+                                                    Start cut at {{video_current_time}} seconds
+                                                </v-btn>
+
+                                                <v-btn
+                                                    v-on:click="$set(video_trim, 1, video_current_time)"
+                                                >
+                                                    End cut at {{video_current_time}} seconds
+                                                </v-btn>
+                                                
+                                                <v-range-slider
+                                                    hint="Cut video"
+                                                    v-bind:max="video_duration"
+                                                    :min="0"
+                                                    step="0.001"
+                                                    v-model="video_trim"
+                                                >
+                                                    <template v-slot:prepend>
+                                                        <v-text-field
+                                                            v-bind:value="video_trim[0]"
+                                                            class="mt-0 pt-0"
+                                                            hide-details
+                                                            single-line
+                                                            type="number"
+                                                            style="width: 60px"
+                                                            @change="$set(video_trim, 0, $event)"
+                                                        ></v-text-field>
+                                                    </template>
+                                                    <template v-slot:append>
+                                                        <v-text-field
+                                                            v-bind:value="video_trim[1]"
+                                                            class="mt-0 pt-0"
+                                                            hide-details
+                                                            single-line
+                                                            type="number"
+                                                            style="width: 60px"
+                                                            @change="$set(video_trim, 1, $event)"
+                                                        ></v-text-field>
+                                                    </template>
+                                                </v-range-slider>
+
+                                                Original video duration was {{video_duration}} seconds
+                                                <br/>
+                                                Cutted video duration is {{ Math.round( (video_trim[1]-video_trim[0])*1000 ) /1000 }} seconds
+
+                                            </form>
                                     
                                         </v-card>
                                 
@@ -238,7 +316,6 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
                                             <segment-table
-                                                v-bind:current_video_time="current_video_time"
                                                 v-bind:segmentation-tool="segmentation_tool"
                                                 v-bind:player="player"
                                             ></segment-table>
@@ -290,7 +367,9 @@ globalThis.segment = {
                                 id="my-video-old"
                                 ref="my_video"
                                 v-bind:FPS="FPS"
-                                v-on:ready="player = $event"
+                                v-bind:video_trim="video_trim"
+                                v-on:ready="player = $event; video_duration = $event.duration()"
+                                v-on:timeupdate="video_current_time = $event"
                             >
                                 <source
                                     v-bind:src="'../mp4/'+patient_id+'/'+analysis_id+'/'+area_code+'/video'"
