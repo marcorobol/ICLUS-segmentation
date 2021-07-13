@@ -68,35 +68,45 @@ Vue.component('video-player', {
     },
     props: ['segmentation_id', 'analysis_id', 'area_code', 'FPS', 'video_trim'],
     emits: [ 'ready', 'timeupdate', 'duration' ],
-    mounted: function() {
+    mounted: async function() {
+		
+		// Wait for video metadata to load
+		await new Promise( (resolve, reject) => {
+			this.$el.addEventListener('loadedmetadata', () => {
+				// console.log(this.$el.duration);
+				resolve()
+			})
+		});
 
+		// Apply videojs
 		var vue_this = this
 		var html5_player = this.html5_player = this.$el //vue_this.$refs["my-video"]
 		var player = this.player = videojs(this.$el)
 
-		// console.log(html5_player.duration) //NaN
-
+		// Apply videojs offset
 		player.offset({
 			start: 0,
-			end: 20,
+			end: this.html5_player.duration,
 			restart_beginning: false //Should the video go to the beginning when it ends
 		});
 
-		// redirect videojs ready event to outside
-		player.ready( function () { vue_this.$emit("ready",this) })
-		
+		// Redirect videojs ready event to outside
 		player.ready( function () { // this is player returned by videojs(this.$el)
 			
-			html5_player.playbackRate = .1
+			//slow down video
+			// html5_player.playbackRate = .1
 			
-			this.on('timeupdate', function () {
-				vue_this.$emit('timeupdate', html5_player.currentTime);
-			})
+			vue_this.$emit("ready",this)
 			
 			// vue_this.$emit('duration', this.duration());
 			vue_this.$emit('duration', html5_player.duration);
+			
+			// this.on('timeupdate', function () {
+			// 	vue_this.$emit('timeupdate', html5_player.currentTime);
+			// })
 		})
 
+		// workaround for on timeupdate
 		setInterval(
 			function() {
 				let video = html5_player
@@ -107,13 +117,13 @@ Vue.component('video-player', {
 				var SMPTE_time = secondsToTimecode(video.currentTime, vue_this.FPS);
 				$("#currentTimeCode").html(SMPTE_time);
 
-				var videoInfo = "<b>Video info:</b><br/>";
-				videoInfo += "currentTime: " + video.currentTime + "<br/>";
-				videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
-				videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
-				$("#videoInfo").html(videoInfo);
+				// var videoInfo = "<b>Video info:</b><br/>";
+				// videoInfo += "currentTime: " + video.currentTime + "<br/>";
+				// videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
+				// videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
+				// $("#videoInfo").html(videoInfo);
 
-				// vue_this.$emit('timeupdate', video.currentTime) // see above on-timeupdate
+				vue_this.$emit('timeupdate', video.currentTime) // see above on-timeupdate
 			},
 			vue_this.FPS
 		);
@@ -245,7 +255,7 @@ Vue.component('video-player', {
 			var seek_error = newPos - video.currentTime;
 			str_seekInfo += "seek error: " + seek_error + "<br/>";
 
-			div_seekInfo.innerHTML = str_seekInfo;
+			// div_seekInfo.innerHTML = str_seekInfo;
 			
 			// track calculated value in logger
 			

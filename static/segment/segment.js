@@ -38,9 +38,11 @@ globalThis.segment = {
         video_duration: function (duration) {
             this.video_trim = [0, duration]
         },
-        // video_trim: function (val) {
-        //     console.log("videoTrimed at " + val)
-        // }
+        video_trim: function (val) {
+            console.log("videoTrimed at " + val)
+            this.player.play()
+            this.player.pause()
+        }
     },
     // created() {
     //     var scripts = [
@@ -93,8 +95,8 @@ globalThis.segment = {
         changeStep: function (step) {
             if(step==3) {
                 console.log(this.$refs)
-                console.log(this.$refs["segmentation_tool"])
                 this.segmentation_tool = this.$refs["segmentation_tool"]
+                console.log(this.segmentation_tool)
             }
         },
         // croppingToolMyEvent: function (bounds) {
@@ -103,7 +105,9 @@ globalThis.segment = {
         // },
         confirmMetadata: function () {
             console.log("confirmMetadata")
-            this.$refs.metadata_form.confirm()
+            // this.$refs.metadata_form.confirm()
+            postApproval(this.metadata)
+            postVideoTrim(this.video_trim)
         },
         confirmCrop: function () {
             console.log("confirmCrop")
@@ -166,14 +170,14 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
             
-                                            <metadata-form-mo
+                                            <!-- metadata-form-mo
                                                 ref="metadata_form"
                                                 v-bind:metadata="metadata"
                                                 v-bind:video_duration="video_duration"
 
                                                 v-on:update:video_trim="video_trim = $event"
                                             >
-                                            </metadata-form-mo>
+                                            </metadata-form-mo-->
 
                                             <form>
             
@@ -196,21 +200,16 @@ globalThis.segment = {
                                                     label="Pixel density"
                                                     v-bind:value="metadata.pixel_density"
                                                 ></v-text-field>
-
-                                                <v-btn
-                                                    v-on:click="$set(video_trim, 0, video_current_time)"
-                                                >
-                                                    Start cut at {{video_current_time}} seconds
-                                                </v-btn>
-
-                                                <v-btn
-                                                    v-on:click="$set(video_trim, 1, video_current_time)"
-                                                >
-                                                    End cut at {{video_current_time}} seconds
-                                                </v-btn>
                                                 
+                                                <v-subheader>
+                                                    <v-icon>
+                                                        mdi-box-cutter
+                                                    </v-icon>
+                                                    Cut video
+                                                </v-subheader>
+
                                                 <v-range-slider
-                                                    hint="Cut video"
+                                                    v-bind:hint="'New video lenght is ' + Math.round( (video_trim[1]-video_trim[0])*1000 ) /1000 + ' secs' "
                                                     v-bind:max="video_duration"
                                                     :min="0"
                                                     step="0.001"
@@ -226,6 +225,23 @@ globalThis.segment = {
                                                             style="width: 60px"
                                                             @change="$set(video_trim, 0, $event)"
                                                         ></v-text-field>
+
+                                                        <v-tooltip bottom>
+                                                            <template v-slot:activator="{ on, attrs }">
+                                                                <v-btn icon
+                                                                    v-on:click="$set(video_trim, 0, video_current_time)"
+                                                                    v-bind="attrs"
+                                                                    v-on="on"
+                                                                >
+                                                                    <v-icon> mdi-timer </v-icon>
+                                                                </v-btn>
+                                                            </template>
+                                                            <span>
+                                                                Use current time.
+                                                                Cut at {{video_current_time}} seconds
+                                                            </span>
+                                                        </v-tooltip>
+
                                                     </template>
                                                     <template v-slot:append>
                                                         <v-text-field
@@ -237,12 +253,32 @@ globalThis.segment = {
                                                             style="width: 60px"
                                                             @change="$set(video_trim, 1, $event)"
                                                         ></v-text-field>
+                                                        
+                                                        <v-tooltip bottom>
+                                                            <template v-slot:activator="{ on, attrs }">
+                                                                <v-btn icon
+                                                                    v-on:click="$set(video_trim, 1, video_current_time)"
+                                                                    v-bind="attrs"
+                                                                    v-on="on"
+                                                                >
+                                                                    <v-icon> mdi-timer </v-icon>
+                                                                </v-btn>
+                                                            </template>
+                                                            <span>
+                                                                Use current time.
+                                                                Cut at {{video_current_time}} seconds
+                                                            </span>
+                                                        </v-tooltip>
+
                                                     </template>
                                                 </v-range-slider>
 
-                                                Original video duration was {{video_duration}} seconds
-                                                <br/>
-                                                Cutted video duration is {{ Math.round( (video_trim[1]-video_trim[0])*1000 ) /1000 }} seconds
+                                                <v-divider></v-divider>
+
+                                                <v-textarea
+                                                    prepend-icon="mdi-comment"
+                                                    label="Comments"
+                                                ></v-textarea>
 
                                             </form>
                                     
@@ -333,7 +369,7 @@ globalThis.segment = {
 
                     </div>
 
-                    <div class="canvas-container" style="padding-bottom: 80px; display: grid">
+                    <div class="canvas-container" style="padding-bottom: 80px; display: grid; align-content: flex-start">
 
                         <div>
                             <div id="seekInfo"></div>
