@@ -212,7 +212,7 @@ globalThis.segment = {
                                                         md="6"
                                                     >
                                                         <v-text-field
-                                                            label="Depth"
+                                                            label="Depth [mm]"
                                                             v-model="metadata.depth"
                                                         ></v-text-field>
                                                     </v-col>             
@@ -234,7 +234,7 @@ globalThis.segment = {
                                                         md="6"
                                                     >
                                                         <v-text-field
-                                                            label="Focal point"
+                                                            label="Focal point [mm]"
                                                             v-model="metadata.focal_point"
                                                         ></v-text-field>   
                                                     </v-col>             
@@ -243,7 +243,7 @@ globalThis.segment = {
                                                         md="6"
                                                     >  
                                                         <v-text-field
-                                                            label="Pixel density"
+                                                            label="Pixel density [pixels/cm]"
                                                             v-model="metadata.pixel_density"
                                                         ></v-text-field>
                                                     
