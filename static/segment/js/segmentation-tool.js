@@ -76,7 +76,7 @@ Vue.component('segmentation-tool', {
     props: ['croppingBounds'],
     watch: { 
         croppingBounds: function(croppingBounds, oldCroppingBounds) { // watch it
-            console.log(croppingBounds)
+            // console.log(croppingBounds)
             
             let b = croppingBounds
             this.croppingPath = new Path2D();

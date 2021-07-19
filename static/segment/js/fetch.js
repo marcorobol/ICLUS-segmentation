@@ -28,10 +28,23 @@ async function deleteSegmentation(segmentation_id) {
 }
 
 
+const statusMap = {
+    1: 'Suspect',
+    2: 'Positive',
+    3: 'Negative',
+    4: 'Post covid'
+}
 
 async function fetchMetadata() {
     return query_res = await fetch(`../api/videos/${urlParams.analysis_id}_${urlParams.area_code}`)
         .then((resp) => resp.json()) // Transform the data into json
+        .then((resp) => {
+            resp.analysis_status_text = statusMap[resp.analysis_status]
+            resp.pixel_density = Math.round(resp.pixel_density*10)/10
+            // resp.comment = ""
+            // resp.confirmed = false
+            return resp
+        })
         .catch( error => console.error(error) ); // If there is any error you will catch them here
 }
 
@@ -85,6 +98,17 @@ async function fetchApprovals() {
     return query_res = await fetch(`../api/videos/${urlParams.analysis_id}_${urlParams.area_code}/approvals`)
         .then((resp) => resp.json()) // Transform the data into json
         .catch( error => console.error(error) ); // If there is any error you will catch them here
+}
+
+async function deleteApproval(approval_id) {
+    return query_res = await fetch(`../api/videos/${urlParams.analysis_id}_${urlParams.area_code}/approvals/${approval_id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then((resp) => resp.json()) // Transform the data into json
+    .catch( error => console.error(error) ); // If there is any error you will catch them here
 }
 
 async function fetchRawMetadata() {

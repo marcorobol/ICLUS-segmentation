@@ -4,8 +4,8 @@ var router = express.Router();
 router.get('/', async function(req, res) {
   let client = await req.pool.connect();
   let query = `SELECT * FROM approvals WHERE CONCAT(analysis_id,'_',area_code) = $1 `
-  console.log(query)
-  let query_res = await client.query(query, [req.query.analysis_id + "_" + req.query.area_code])
+  console.log(query, req.analysis_id + "_" + req.area_code)
+  let query_res = await client.query(query, [req.analysis_id + "_" + req.area_code])
   .catch(err => {
     console.log(err.stack)
   })
@@ -23,10 +23,13 @@ router.post('/', async function(req, res) {
   const frequency = req.body.frequency
   const focal_point = req.body.focal_point
   const pixel_density = req.body.pixel_density
+  const cut_beginning = req.body.cut_beginning
+  const cut_end = req.body.cut_end
+  const comment = req.body.comment
 
   let client = await req.pool.connect();
-  let query = `INSERT INTO approvals VALUES ( DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8 ) RETURNING *`;
-  let query_res = await client.query(query, [crop_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density])
+  let query = `INSERT INTO approvals VALUES ( DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 ) RETURNING *`;
+  let query_res = await client.query(query, [crop_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment])
     .catch(err => {
       console.log(err.stack)
     })

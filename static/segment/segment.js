@@ -23,6 +23,7 @@ globalThis.segment = {
             analysis_id: urlParams.analysis_id,
             area_code: urlParams.area_code,
             metadata: [],
+            approvals: [],
             video: {},
             FPS: null,
             cropping_bounds: {x:0},
@@ -30,7 +31,8 @@ globalThis.segment = {
             video_duration: 0,
             video_trim: [0,0],
             segmentation_tool: null,
-            player: null
+            player: null,
+            tab: null
         }
     },
 	
@@ -71,16 +73,20 @@ globalThis.segment = {
             this.FPS = Function(`'use strict'; return (${response.r_frame_rate})`)()
         })
 
-        const statusMap = {
-            1: 'Suspect',
-            2: 'Positive',
-            3: 'Negative',
-            4: 'Post covid'
-        }
+        // const statusMap = {
+        //     1: 'Suspect',
+        //     2: 'Positive',
+        //     3: 'Negative',
+        //     4: 'Post covid'
+        // }
         fetchMetadata().then( response => {
             console.log('Matadata:', response)
             this.metadata = response
-            this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
+            // this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
+        })
+        fetchApprovals().then( response => {
+            console.log('Approvals:', response)
+            this.approvals = response
         })
         
         // this.$refs.my_video.player.ready( () => {
@@ -91,27 +97,45 @@ globalThis.segment = {
         // })
 
     },
+    filters: {
+        date: function(str) {
+            if (!str) { return '(n/a)'; }
+            str = new Date(str);
+            return str.getFullYear() + '-' + ((str.getMonth() < 9) ? '0' : '') + (str.getMonth() + 1) + '-' +
+            ((str.getDate() < 10) ? '0' : '') + str.getDate() + ' ' +
+            str.getHours() + ':' + ((str.getMinutes() < 10) ? '0' : '') + str.getMinutes();
+        }
+    },
     methods: {
         changeStep: function (step) {
+            console.log("step: " + step)
             if(step==3) {
                 console.log(this.$refs)
                 this.segmentation_tool = this.$refs["segmentation_tool"]
-                console.log(this.segmentation_tool)
+                console.log("segmentation_tool: " + this.segmentation_tool)
             }
         },
         // croppingToolMyEvent: function (bounds) {
         //     this.cropping_bounds = bounds
         //     // this.$refs.segmentation_tool.setCroppingBounds(bounds)
         // },
-        confirmMetadata: function () {
+        confirmMetadata: async function () {
             console.log("confirmMetadata")
             // this.$refs.metadata_form.confirm()
-            postApproval(this.metadata)
-            postVideoTrim(this.video_trim)
+            this.metadata.cut_beginning = this.video_trim[0]
+            this.metadata.cut_end = this.video_trim[1]
+            console.log(this.metadata)
+            await postApproval(this.metadata)
+            // postVideoTrim(this.video_trim)
+            this.approvals = await fetchApprovals()
         },
         confirmCrop: function () {
             console.log("confirmCrop")
             postCrop({bounds: this.cropping_bounds})
+        },
+        deleteApproval: async function (approval_id) {
+            await deleteApproval(approval_id)
+            this.approvals = await fetchApprovals()
         }
     },
     template: `
@@ -161,8 +185,9 @@ globalThis.segment = {
                                         :complete="e1 > 1"
                                         step="1"
                                         editable
+                                        v-bind:editable="e1 > 1"
                                     >
-                                        Metadata
+                                        Metadata ( {{ (approvals.length>0?'Confirmed':'Still to be approved!') }} )
                                     </v-stepper-step>
                             
                                     <v-stepper-content step="1">
@@ -180,27 +205,51 @@ globalThis.segment = {
                                             </metadata-form-mo-->
 
                                             <form>
-            
-                                                <v-text-field
-                                                    label="Depth"
-                                                    v-bind:value="metadata.depth"
-                                                ></v-text-field>
-                                                            
-                                                <v-text-field
-                                                    label="Frequency"
-                                                    v-bind:value="metadata.frequency"
-                                                ></v-text-field>
-                                                                        
-                                                <v-text-field
-                                                    label="Focal point"
-                                                    v-bind:value="metadata.focal_point"
-                                                ></v-text-field>
-                                                            
-                                                <v-text-field
-                                                    label="Pixel density"
-                                                    v-bind:value="metadata.pixel_density"
-                                                ></v-text-field>
-                                                
+
+                                                <v-row>
+                                                    <v-col
+                                                        cols="12"
+                                                        md="6"
+                                                    >
+                                                        <v-text-field
+                                                            label="Depth"
+                                                            v-model="metadata.depth"
+                                                        ></v-text-field>
+                                                    </v-col>             
+                                                    <v-col
+                                                        cols="12"
+                                                        md="6"
+                                                    >  
+                                                        <v-text-field
+                                                            label="Frequency"
+                                                            v-model="metadata.frequency"
+                                                        ></v-text-field>
+                                                                     
+                                                    </v-col>
+                                                </v-row>
+
+                                                <v-row>
+                                                    <v-col
+                                                        cols="12"
+                                                        md="6"
+                                                    >
+                                                        <v-text-field
+                                                            label="Focal point"
+                                                            v-model="metadata.focal_point"
+                                                        ></v-text-field>   
+                                                    </v-col>             
+                                                    <v-col
+                                                        cols="12"
+                                                        md="6"
+                                                    >  
+                                                        <v-text-field
+                                                            label="Pixel density"
+                                                            v-model="metadata.pixel_density"
+                                                        ></v-text-field>
+                                                    
+                                                    </v-col>
+                                                </v-row>
+
                                                 <v-subheader>
                                                     <v-icon>
                                                         mdi-box-cutter
@@ -209,19 +258,20 @@ globalThis.segment = {
                                                 </v-subheader>
 
                                                 <v-range-slider
-                                                    v-bind:hint="'New video lenght is ' + Math.round( (video_trim[1]-video_trim[0])*1000 ) /1000 + ' secs' "
+                                                    v-bind:hint="'New video length is ' + Math.round( (video_trim[1]-video_trim[0])*1000 ) /1000 + ' secs' "
                                                     v-bind:max="video_duration"
                                                     :min="0"
-                                                    step="0.001"
+                                                    step="0.01"
                                                     v-model="video_trim"
                                                 >
                                                     <template v-slot:prepend>
                                                         <v-text-field
                                                             v-bind:value="video_trim[0]"
+                                                            label="Start at"
                                                             class="mt-0 pt-0"
                                                             hide-details
-                                                            single-line
                                                             type="number"
+                                                            step="0.01"
                                                             style="width: 60px"
                                                             @change="$set(video_trim, 0, $event)"
                                                         ></v-text-field>
@@ -246,10 +296,11 @@ globalThis.segment = {
                                                     <template v-slot:append>
                                                         <v-text-field
                                                             v-bind:value="video_trim[1]"
+                                                            label="End at"
                                                             class="mt-0 pt-0"
                                                             hide-details
-                                                            single-line
                                                             type="number"
+                                                            step="0.01"
                                                             style="width: 60px"
                                                             @change="$set(video_trim, 1, $event)"
                                                         ></v-text-field>
@@ -277,10 +328,53 @@ globalThis.segment = {
 
                                                 <v-textarea
                                                     prepend-icon="mdi-comment"
-                                                    label="Comments"
+                                                    label="Comment"
+                                                    v-model="metadata.comment"
                                                 ></v-textarea>
 
                                             </form>
+                                        
+
+                                            <v-timeline reverse dense>
+
+                                                <template v-if="approvals.length<1">
+                                                <v-timeline-item>
+                                                <v-card class="elevation-2">
+                                                <v-card-text>
+                                                    Still to be approved!
+                                                </v-card-text>
+                                                </v-card>
+                                                </v-timeline-item>
+                                                </template>
+
+                                                <v-timeline-item
+                                                    v-for="item in approvals"
+                                                    :key="item.approval_id"
+                                                >
+                                                    <v-card class="elevation-2">
+                                                    <v-card-title class="text-h5">
+                                                        User {{item.user_id}}
+                                                    </v-card-title>
+                                                    <v-card-text>
+                                                        {{item.updated_at | date}}
+                                                        <v-btn x-small :hint="item.approval_id" type='button' v-on:click="deleteApproval(item.approval_id)">
+                                                            <v-icon> mdi-delete </v-icon>
+                                                        </v-btn>
+                                                        <br/>
+                                                        Depth: {{item.depth}}
+                                                        Frequency: {{item.frequency}}
+                                                        <br/>
+                                                        Focal_point: {{item.focal_point}}
+                                                        Pixel_density: {{item.pixel_density}}
+                                                        <br/>
+                                                        Cut_beginning: {{item.cut_beginning}}
+                                                        Cut_end: {{item.cut_end}}
+                                                        <br/>
+                                                        Comment: {{item.comment}}
+                                                    </v-card-text>
+                                                    </v-card>
+                                                </v-timeline-item>
+                                            </v-timeline>
                                     
                                         </v-card>
                                 
@@ -288,13 +382,13 @@ globalThis.segment = {
                                             color="primary"
                                             @click="e1 = 2; confirmMetadata()"
                                         >
-                                            Confirm metadata
+                                            Submit
                                         </v-btn>
                                 
                                         <v-btn text
-                                            @click="e1 = 2"
+                                        @click="e1 = 2"
                                         >
-                                            Skip
+                                            Discard changes
                                         </v-btn>
                                         
                                     </v-stepper-content>
@@ -302,7 +396,7 @@ globalThis.segment = {
                                     <v-stepper-step
                                         :complete="e1 > 2"
                                         step="2"
-                                        editable
+                                        v-bind:editable="e1 > 2"
                                     >
                                         Crop
                                     </v-stepper-step>
@@ -328,21 +422,21 @@ globalThis.segment = {
                                 
                                         <v-btn
                                             color="primary"
-                                            @click="e1 = 3; confirmCrop()"
+                                            @click="e1 = 3; confirmCrop(); changeStep(3)"
                                         >
-                                            Confirm crop
+                                            Submit crop
                                         </v-btn>
                                 
                                         <v-btn text
-                                        @click="e1 = 3"
+                                        @click="e1 = 3; changeStep(3)"
                                         >
-                                            Skip
+                                            Discard changes
                                         </v-btn>
                                     </v-stepper-content>
                             
                                     <v-stepper-step
                                         step="3"
-                                        editable
+                                        v-bind:editable="e1 > 3"
                                     >
                                         Segment
                                     </v-stepper-step>

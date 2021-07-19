@@ -121,6 +121,9 @@ Vue.component('segment-table', {
                                     rate
                                 </th>
                                 <th>
+                                    points
+                                </th>
+                                <th>
                                     actions
                                 </th>
                             </tr>
@@ -137,8 +140,15 @@ Vue.component('segment-table', {
                                     {{ seg.rate }}
                                 </td>
                                 <td>
-                                    <v-btn type='button' v-on:click="load_seg(seg)">Load</v-btn>
-                                    <v-btn type='button' v-on:click="delete_seg(seg)">Delete</v-btn>
+                                    {{ seg.points.length }}
+                                </td>
+                                <td>
+                                    <v-btn type='button' v-on:click="load_seg(seg)">
+                                        <v-icon> mdi-eye </v-icon>
+                                    </v-btn>
+                                    <v-btn type='button' v-on:click="delete_seg(seg)">
+                                        <v-icon> mdi-delete </v-icon>
+                                    </v-btn>
                                 </td>
                             </tr>
                         </tbody>
@@ -178,17 +188,14 @@ Vue.component('segment-table', {
                                         class="mr-4"
                                         v-on:click="create_seg()"
                                     >
-                                        Add
+                                        <v-icon> mdi-content-save </v-icon> Save
                                     </v-btn>
-
-                                    <v-btn
-                                        class="mr-4"
-                                        v-on:click="clear_seg()"
-                                    >
-                                        Clear
-                                    </v-btn>
-                                    
                                 </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-btn class="mr-4" v-on:click="clear_seg()">
+                                    <v-icon> mdi-wiper </v-icon> Clear drawing
+                                </v-btn>
                             </v-row>
                         </v-container>
                     </v-form>
