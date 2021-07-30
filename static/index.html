@@ -25,6 +25,7 @@
 
 
     <script src="/segment/segment.js"></script>
+    <script src="/segments/segments.js"></script>
     
     <script src="/vendors/video.js/video.min.js"></script>
     <script src="/vendors/videojs-offset.js"></script>
@@ -77,6 +78,9 @@
                 <v-spacer></v-spacer>
                 <a href="/segment">Segment a random video</a>
                 <!-- <router-link to="/segment">Segment a random video</router-link> -->
+
+                <v-spacer></v-spacer>
+                <a href="/segments">Segmentations overview</a>
             </v-app-bar>
 
             <v-main>
@@ -97,6 +101,7 @@
             routes: [
                 { path: '/', component: { template: '<div>Hello!</div>' } },
                 { path: '/segment', component: globalThis.segment },
+                { path: '/segments', component: globalThis.segments },
             ]
         })
 

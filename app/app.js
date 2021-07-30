@@ -77,6 +77,10 @@ app.get('/segment', async function(req, res) {
   res.sendFile('./index.html', { root: path.join(__dirname, '../static') })
 });
 
+app.get('/segments', async function(req, res) {
+  res.sendFile('./index.html', { root: path.join(__dirname, '../static') })
+});
+
 
 /**
  * API
