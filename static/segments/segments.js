@@ -70,7 +70,7 @@ globalThis.segments = {
             return statusMap[id]
         },
         listOfIds: function(list) {
-            return list.map( e => (e==null?'null':e) ).join(', ')
+            return (list?list.map( e => (e==null?'null':e) ).join(', '):'')
         }
     },
 
@@ -204,20 +204,21 @@ globalThis.segments = {
                 :headers="headers"
                 :items="videos"
                 :items-per-page="5"
-                item-key="name"
+                item-key="file_id"
                 class="elevation-1"
                 show-expand
+                multi-sort
+                show-group-by
                 :footer-props="{
-                showFirstLastPage: true,
-                firstIcon: 'mdi-arrow-collapse-left',
-                lastIcon: 'mdi-arrow-collapse-right',
-                prevIcon: 'mdi-minus',
-                nextIcon: 'mdi-plus'
+                    showFirstLastPage: true,
+                    firstIcon: 'mdi-arrow-collapse-left',
+                    lastIcon: 'mdi-arrow-collapse-right',
+                    prevIcon: 'mdi-minus',
+                    nextIcon: 'mdi-plus',
+                    'items-per-page-options': [5, 10, 50, 100, 500, -1]
                 }"
             >
-                <template
-                    v-slot:body.prepend="{ headers }"
-                >
+                <template v-slot:body.prepend="{ headers }">
                     <tr>
                         <td v-for="column in headers" :colspan="1">
                             <v-select
@@ -330,7 +331,6 @@ globalThis.segments = {
                             v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_Fc.png' "
                         />
                     </td>
-
                 </template>
 
             </v-data-table>
