@@ -27,13 +27,55 @@ globalThis.segments = {
         }
     },
 
+    watch: {
+        $route: {
+            handler: function(to, from) {
+                // console.log(to)
+            },
+            // immediate: true
+        }
+    },
+
     mounted: async function () {
         
-        for (let {text,value,options,filterName} of this.headers) {
+        for (let {text,value,options,select,filterName} of this.headers) {
             let stats = await this.callStats( groupBy= [value] )
             for (entry of stats) {
                 options.push({id: entry[value]})
             }
+        }
+        
+        // Pull from browser query into filters
+        for (let {value,options,select} of this.headers) {
+            
+            // check if query field exists
+            if(!this.$route.query[value])
+                continue;
+            
+            // array or not array
+            let values = this.$route.query[value]
+            if(!Array.isArray(values))
+                values = [values]
+
+            // push values
+            for (v of values) {
+                // console.log("pushing ", v, " into column", value)
+                
+                // if not set skip
+                if ( v == null )
+                    continue
+                // if string 'null'
+                else if ( v.replaceAll(' ','') == 'null' )
+                    v = null
+                // if number
+                else if (!isNaN(v))
+                    v = parseFloat(v)
+
+                // if in the options but still not selected
+                if ( options.find( e=>e.id==v ) && !select.includes(v) )
+                    select.push(v)
+            }
+
         }
 
         this.refresh()
@@ -103,7 +145,7 @@ globalThis.segments = {
         refresh: async function () {
     
             await this.refreshHeaders()
-
+            
             var queryParams = []
 
             // queryParams.push("where=depth%20IS%20NOT%20NULL")
@@ -113,6 +155,12 @@ globalThis.segments = {
                 queryParams.push('where='+field)
             }
             
+            // Push to browser query
+            console.log("pushing to router")
+            this.$router.push( { query: this.headers.reduce( (query, column) => {query[column.value] = column.select.map(e=>(e==null?'null':e)); return query}, {} ) } );
+            // console.log(this.$route.query)
+            
+
             let query = '../api/videos?' + queryParams.join("&");
             
             // fetch('../api/videos?where=depth%20IS%20NOT%20NULL')
@@ -174,7 +222,6 @@ globalThis.segments = {
               .catch( error => console.error(error) ); // If there is any error you will catch them here
         },
 
-
         textIntoSelect: function (value, column) {
             let select = column.select
             select.splice(0);
@@ -190,6 +237,23 @@ globalThis.segments = {
                         select.push(v)
                 }
             this.refresh()
+        },
+
+        pushIntoSelect: function (values, {value,select,options}=column) {
+            select.splice(0);
+            if(!Array.isArray(values))
+                values = [values]
+            for (v of values) {
+                console.log("pushing ", v, " into column", value)
+                
+                if ( v.replaceAll(' ','') == 'null' )
+                    v = null
+                else if (!isNaN(v))
+                    v = parseFloat(v)
+
+                if ( options.find( e=>e.id==v ) && !select.includes(v) )
+                    select.push(v)
+            }
         }
 
     },
