@@ -7,11 +7,14 @@ var api_approvals = require('./approvals');
 router.get('/', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
   console.log("videos.get")
 
-  let where = req.query.where
-  where = (Array.isArray(where)?where:[where])
+  const where = []
+  if (req.query.where && Array.isArray(req.query.where))
+    where.push.apply( where, req.query.where )
+  else if (req.query.where)
+    where.push( req.query.where )
     
   const client = await req.pool.connect();
-  let query = `SELECT * FROM app_file_flat ${where?'WHERE '+where.join(' AND '):''} `;
+  let query = `SELECT * FROM app_file_flat ${where.length>0?'WHERE '+where.map( w=>'('+w+')').join(' AND '):''} `;
   const query_res = await client.query(query)
   .catch(err => {
     console.log(err.stack)

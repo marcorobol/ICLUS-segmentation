@@ -5,6 +5,12 @@ var router = express.Router();
 
 router.get('/', async function(req, res) {
 
+  const where = []
+  if (req.query.where && Array.isArray(req.query.where))
+    where.push.apply( where, req.query.where )
+  else if (req.query.where)
+    where.push( req.query.where )
+
   // console.log(req.query.groupBy);
 
   const groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
@@ -103,6 +109,7 @@ FROM
     app_file_flat
   WHERE
     frames IS NOT NULL
+    ${where.length>0?'AND '+where.map( w=>'('+w+')').join(' AND '):''}
 ) AS app_file_flat_rounded
 
 --WHERE
