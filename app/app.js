@@ -13,7 +13,6 @@ const path = require('path')
  */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.set('view engine', 'ejs');
 
 
 
@@ -38,21 +37,30 @@ app.use('/', async function(req, res, next) {
 /**
  * Serve front-end static files
  */
+// Not indexed
 app.use('/', express.static('static'));
+// Indexed
 app.use('/unzipped', express.static(process.env.UNZIPPED), serveIndex(process.env.UNZIPPED, { 'icons': true }) );
 
 
 
 /**
- * Apps routing
+ * Mp4 Service
  */
 const mp4_router = require('./mp4/mp4.js');
 app.use('/mp4', mp4_router);
 
-// const segment_router = require('./segment/segment.js');
-// app.use('/segment', segment_router);
 
-app.get('/segment', async function(req, res, next) {
+
+/**
+ * Webapp
+ */
+
+// files
+app.use('/webapp', express.static('./webapp'));
+
+// special route to handle segmentation of a random video 
+app.get('/webapp/segment', async function(req, res, next) {
 
   if (!req.query.patient_id || !req.query.analysis_id || !req.query.area_code) {
 
@@ -65,7 +73,7 @@ app.get('/segment', async function(req, res, next) {
     let analysis_id = query_res.rows[0].analysis_id
     let area_code = query_res.rows[0].file_area_code
 
-    res.redirect('?patient_id=' + patient_id + "&analysis_id=" + analysis_id + "&area_code=" + area_code);
+    res.redirect('../#/segment/?patient_id=' + patient_id + "&analysis_id=" + analysis_id + "&area_code=" + area_code);
     return;
 
   }
@@ -73,13 +81,11 @@ app.get('/segment', async function(req, res, next) {
 
 });
 
-app.get('/segment', async function(req, res) {
-  res.sendFile('./index.html', { root: path.join(__dirname, '../static') })
+// app main file
+app.get('/webapp(/*)?', async function(req, res) {
+  res.sendFile('/index.html', { root: path.join(__dirname, '../webapp') })
 });
 
-app.get('/segments', async function(req, res) {
-  res.sendFile('./index.html', { root: path.join(__dirname, '../static') })
-});
 
 
 /**
