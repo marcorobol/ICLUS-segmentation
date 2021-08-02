@@ -9,7 +9,7 @@ var router = express.Router()
  * API
  */
  router.use('/', async function(req, res, next) {
-  console.log('API '+req.method+' request on ' + req.path)
+  // console.log('API '+req.method+' request on ' + req.path)
   next();
 })
 

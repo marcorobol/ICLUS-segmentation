@@ -1,9 +1,10 @@
 var express = require('express');
 var router = express.Router();
+const db = require('../db');
 
 
 
-router.get('/', async function(req, res) {
+router.get('/', async function(req, res, next) {
 
   const where = []
   if (req.query.where && Array.isArray(req.query.where))
@@ -85,46 +86,36 @@ router.get('/', async function(req, res) {
   //   else if (gp=='status')        ORDER_BY.push(`status ASC`)
   // }
 
-  let my_query = `
-SELECT
-${SELECT.join(',\n')}${(SELECT.length>0?',\n':'')}
-SUM (_frames) AS number_of_frames,
-COUNT (_file_id) AS number_of_files,
-COUNT (DISTINCT _analysis_id) AS number_of_analyses,
-COUNT (DISTINCT _patient_id) AS number_of_patients,
-COUNT (DISTINCT _operator_id) AS number_of_operators,
-ARRAY_AGG (DISTINCT _operator_id) operators
-
-FROM
-(
-  SELECT
-    ${SUBSELECT.join(',\n')}${(SUBSELECT.length>0?',\n':'')}
-    frames AS _frames,
-    file_id AS _file_id,
-    analysis_id AS _analysis_id,
-    patient_id AS _patient_id,
-    operator_id AS _operator_id
-    --analysis_status
-  FROM
-    app_file_flat
-  WHERE
-    frames IS NOT NULL
-    ${where.length>0?'AND '+where.map( w=>'('+w+')').join(' AND '):''}
-) AS app_file_flat_rounded
-
---WHERE
---depth IS NOT NULL AND
---analysis_status = 2
-
-GROUP BY
-${GROUP_BY.join(',\n')}
-
-ORDER BY
-${ORDER_BY.join(',\n')}
-
-  `;
-
-  console.log(my_query);
+  /**
+   * Compact version
+   */
+  let my_query = `SELECT ${SELECT.join(', ')} ${(SELECT.length>0?',':'')}
+SUM (_frames) AS number_of_frames,\
+COUNT (_file_id) AS number_of_files,\
+COUNT (DISTINCT _analysis_id) AS number_of_analyses,\
+COUNT (DISTINCT _patient_id) AS number_of_patients,\
+COUNT (DISTINCT _operator_id) AS number_of_operators,\
+ARRAY_AGG (DISTINCT _operator_id) operators FROM (
+SELECT ${SUBSELECT.join(', ')}${(SUBSELECT.length>0?',':'')}
+frames AS _frames,\
+file_id AS _file_id,\
+analysis_id AS _analysis_id,\
+patient_id AS _patient_id,\
+operator_id AS _operator_id FROM app_file_flat
+WHERE frames IS NOT NULL ${where.length>0?'AND':''} ${where.map( w=>'('+w+')').join(' AND ')} ) AS app_file_flat_rounded
+GROUP BY ${GROUP_BY.join(', ')} ORDER BY ${ORDER_BY.join(', ')}`;
+  
+  /**
+   * Sliced version
+   */
+  // console.log(`
+  //   SELECT ${SELECT.join(', ')} ${(SELECT.length>0?',':'')} number_of_... FROM (
+  //     SELECT ${SUBSELECT.join(', ')} ${(SUBSELECT.length>0?',':'')} ..._id FROM app_file_flat
+  //     WHERE frames IS NOT NULL ${where.length>0?'AND':''} ${where.map( w=>'('+w+')').join(' AND ')}
+  //   ) AS app_file_flat_rounded
+  //   GROUP BY ${GROUP_BY.join(', ')}
+  //   ORDER BY ${ORDER_BY.join(', ')}
+  // `);
 
 
 
@@ -189,14 +180,10 @@ ${ORDER_BY.join(',\n')}
     depth_rounded DESC
   `;
 
-  // client = await pool.connect();
-  // query_res = await client.query(my_query)
-  query_res = await req.pool.query(my_query)
+  query_res = await db.query(my_query)
   .catch(err => {
-    console.log(err.stack)
+    next(err);
   })
-
-  // client.release()
   
   // for (const row of rows) {
   //     [row.structure_id, row.operator_id, row.patient_id, row.analysis_id, row.analysis_status, row.file_id, row.file_area_code, row.rating_operator]);

@@ -2,24 +2,22 @@ var express = require('express');
 var router = express.Router();
 var api_crops = require('./crops');
 var api_approvals = require('./approvals');
+const db = require('../db');
 
 
-router.get('/', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
-  console.log("videos.get")
+router.get('/', async function(req, res, next) { //?where=depth%20IS%20NOT%20NULL
 
   const where = []
   if (req.query.where && Array.isArray(req.query.where))
     where.push.apply( where, req.query.where )
   else if (req.query.where)
     where.push( req.query.where )
-    
-  const client = await req.pool.connect();
-  let query = `SELECT * FROM app_file_flat ${where.length>0?'WHERE '+where.map( w=>'('+w+')').join(' AND '):''} `;
-  const query_res = await client.query(query)
+  
+  let query = `SELECT * FROM app_file_flat ${where.length>0?'WHERE '+where.map( w=>'('+w+')').join(' AND '):''}`;
+  const query_res = await db.query(query)
   .catch(err => {
-    console.log(err.stack)
+    next(err);
   })
-  client.release();
   
   // for (const row of rows) {
   //     [row.structure_id, row.operator_id, row.patient_id, row.analysis_id, row.analysis_status, row.file_id, row.file_area_code, row.rating_operator]);
@@ -39,14 +37,13 @@ router.use('/:video_ref', async function(req, res, next) {
 router.use('/:video_ref/crops', api_crops);
 router.use('/:video_ref/approvals', api_approvals);
 
-router.get('/:video_ref', async function(req, res) {
-  let client = await req.pool.connect();
+router.get('/:video_ref', async function(req, res, next) {
+  
   let query = `SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)='${req.params.video_ref}'`
-  let query_res = await client.query(query)
+  let query_res = await db.query(query)
   .catch(err => {
-    console.log(err.stack)
+    next(err);
   })
-  client.release()
   
   res.json(query_res.rows[0]);
 });

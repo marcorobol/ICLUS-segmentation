@@ -1,20 +1,21 @@
 var express = require('express');
 var router = express.Router();
+const db = require('../db');
 
-router.get('/', async function(req, res) {
-  let client = await req.pool.connect();
+
+
+router.get('/', async function(req, res, next) {
   let query = `SELECT * FROM approvals WHERE CONCAT(analysis_id,'_',area_code) = $1 `
   console.log(query, req.analysis_id + "_" + req.area_code)
-  let query_res = await client.query(query, [req.analysis_id + "_" + req.area_code])
+  let query_res = await db.query(query, [req.analysis_id + "_" + req.area_code])
   .catch(err => {
-    console.log(err.stack)
+    next(err);
   })
-  client.release()
   
   res.json(query_res.rows);
 });
 
-router.post('/', async function(req, res) {
+router.post('/', async function(req, res, next) {
   const crop_created_at = new Date()
   const user_id = 0;
   const analysis_id = req.analysis_id
@@ -27,26 +28,22 @@ router.post('/', async function(req, res) {
   const cut_end = req.body.cut_end
   const comment = req.body.comment
 
-  let client = await req.pool.connect();
   let query = `INSERT INTO approvals VALUES ( DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 ) RETURNING *`;
-  let query_res = await client.query(query, [crop_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment])
+  let query_res = await db.query(query, [crop_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment])
     .catch(err => {
-      console.log(err.stack)
+      next(err);
     })
-  client.release()
   res.json(query_res);
 });
 
-router.delete('/:approval_id', async function(req, res) {
-  let client = await req.pool.connect();
+router.delete('/:approval_id', async function(req, res, next) {
   let query = `DELETE FROM approvals WHERE
     approval_id = '${req.params.approval_id}'
   ;`;
-  let query_res = await client.query(query)
+  let query_res = await db.query(query)
   .catch(err => {
-    console.log(err.stack)
+    next(err);
   })
-  client.release()
   
   res.json(query_res);
 });

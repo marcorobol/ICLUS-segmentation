@@ -3,7 +3,6 @@ var router = express.Router();
 
 
 router.get('/', async function(req, res) { //?where=depth%20IS%20NOT%20NULL
-  console.log("videos_federico.get")
 
   let where = req.query.where
   where = (Array.isArray(where)?where:[where])

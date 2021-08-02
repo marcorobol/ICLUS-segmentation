@@ -35,6 +35,16 @@ app.use('/', async function(req, res, next) {
 
 
 /**
+ * Incoming requests logger
+ */
+app.use((req, res, next) => {
+    console.log('Incoming request ('+req.ip+')', req.method, req.hostname, req.url)//req.queryreq.path
+    next()
+});
+
+
+
+/**
  * Serve front-end static files
  */
 // Not indexed
@@ -104,6 +114,19 @@ app.use((req, res) => {
     res.json({ error: 'Not found' });
 });
 
+
+/**
+ * Errors catcher
+ */
+app.use((err, req, res, next) => {
+  if(err.statusCode) {
+      res.status(err.statusCode).send(err.message);
+  } else {
+      console.log(err);
+      // console.log(err.stack)
+      res.status(500).send('Something unexpected happened');
+  }
+});
 
 
 module.exports = app;

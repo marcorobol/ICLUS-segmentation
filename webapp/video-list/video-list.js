@@ -48,34 +48,17 @@ globalThis.videoList = {
         // Pull from browser query into filters
         for (let {value,options,select} of this.headers) {
             
-            // check if query field exists
-            if(!this.$route.query[value])
-                continue;
+            let strings = this.$route.query[value]
+            if(!Array.isArray(strings))
+                strings = [strings]
             
-            // array or not array
-            let values = this.$route.query[value]
-            if(!Array.isArray(values))
-                values = [values]
-
-            // push values
-            for (v of values) {
-                // console.log("pushing ", v, " into column", value)
-                
-                // if not set skip
-                if ( v == null )
-                    continue
-                // if string 'null'
-                else if ( v.replaceAll(' ','') == 'null' )
-                    v = null
-                // if number
-                else if (!isNaN(v))
-                    v = parseFloat(v)
-
-                // if in the options but still not selected
-                if ( options.find( e=>e.id==v ) && !select.includes(v) )
-                    select.push(v)
-            }
-
+            if (strings)
+                for (string of strings) {
+                    let found = options.find( opt => ''+opt.id == ''+string )
+                    if ( found!=undefined && !select.includes(found.id) )
+                        select.push(found.id)
+                }
+            
         }
 
         this.refresh()
@@ -118,6 +101,27 @@ globalThis.videoList = {
 
     methods: {
 
+        textIntoSelect: function (text, {options,select}=column) {
+
+            // clear current select
+            select.splice(0);
+            
+            // loop over keys
+            if (text)
+                for (string of text.replaceAll(' ','').split(',')) {
+                    let found = options.find( opt => ''+opt.id == ''+string )
+                    if ( found!=undefined && !select.includes(found.id) )
+                        select.push(found.id)
+                }
+            
+            // refresh view
+            this.refresh()
+        },
+
+        lookupIntoOption: function(string, options) {
+            return options.find( opt => (''+opt.id).replaceAll(' ','') == (''+string).replaceAll(' ','') )
+        },
+
         selectedWhereParams: function (headers) {
             const queryParams = []
             for ({text,value,options,select} of headers) {
@@ -143,9 +147,26 @@ globalThis.videoList = {
          * This function refresh the list
          */
         refresh: async function () {
-    
-            await this.refreshHeaders()
             
+            /**
+             * Refresh headers statistics!
+             */
+            for (let {text,value,options,select,filterName} of this.headers) {
+                let stats = await this.callStats( groupBy = [value], where = this.selectedWhereParams( this.headers.filter(h => h.value!=value) ) )
+                for (opt of options) {
+                    let s = stats.find( s => s[value] == opt.id )
+                    if ( s ) {
+                        opt.counter = s.number_of_files
+                    }
+                    else {
+                        opt.counter = 0
+                    }
+                }
+            }
+            
+            /**
+             * Calling videos APIs
+             */
             var queryParams = []
 
             // queryParams.push("where=depth%20IS%20NOT%20NULL")
@@ -176,27 +197,6 @@ globalThis.videoList = {
             
         },
 
-        refreshHeaders: async function () {
-            
-            for (let {text,value,options,filterName} of this.headers) {
-                let stats = await this.callStats( groupBy = [value], where = this.selectedWhereParams( this.headers.filter(h => h.value!=value) ) )
-                for (opt of options) {
-                    let s = stats.find( s => s[value] == opt.id )
-                    if ( s ) {
-                        opt.disabled = false
-                        let filter = this.$options.filters[filterName]
-                        opt.label = (filter?filter(opt.id):(opt.id!=null?opt.id:'null')) + ' - ' + s.number_of_files + ' videos'
-                    }
-                    else {
-                        opt.disabled = true
-                        let filter = this.$options.filters[filterName]
-                        opt.label = (filter?filter(opt.id):(opt.id!=null?opt.id:'null')) + ' - no videos'
-                    }
-                }
-            }
-
-        },
-
         callStats: async function (groupBy=[], where=[]) {
   
             let queryParams = []
@@ -222,38 +222,9 @@ globalThis.videoList = {
               .catch( error => console.error(error) ); // If there is any error you will catch them here
         },
 
-        textIntoSelect: function (value, column) {
-            let select = column.select
-            select.splice(0);
-            if(value)
-                for (v of value.split(',')) {
-                    
-                    if ( v.replaceAll(' ','') == 'null' )
-                        v = null
-                    else if (!isNaN(v))
-                        v = parseFloat(v)
-
-                    if ( column.options.find( e=>e.id==v ) && !select.includes(v) )
-                        select.push(v)
-                }
-            this.refresh()
-        },
-
-        pushIntoSelect: function (values, {value,select,options}=column) {
-            select.splice(0);
-            if(!Array.isArray(values))
-                values = [values]
-            for (v of values) {
-                console.log("pushing ", v, " into column", value)
-                
-                if ( v.replaceAll(' ','') == 'null' )
-                    v = null
-                else if (!isNaN(v))
-                    v = parseFloat(v)
-
-                if ( options.find( e=>e.id==v ) && !select.includes(v) )
-                    select.push(v)
-            }
+        computeOptionLabel: function ({text,value,options,select,filterName} = column) {
+            let filter = this.$options.filters[filterName]
+            return (opt) => (filter?filter(opt.id):(opt.id!=null?opt.id:'null')) + ' - ' + opt.counter + ' videos'
         }
 
     },
@@ -288,14 +259,31 @@ globalThis.videoList = {
                             <v-select
                                 v-if="column.text"
                                 v-model="column.select"
-                                :items="column.options"
+                                :items="column.hideEmptyOptions?column.options.filter(o=>o.counter>0||column.select.includes(o.id)):column.options"
                                 item-value="id"
-                                item-text="label"
+                                :item-text="computeOptionLabel(column)"
                                 :label="column.text"
                                 multiple
+                                chips
                                 v-on:change="refresh"
-                                :menu-props="{ 'content-class': (column.hideDisabledItems?'v-select--hide-disabled-items':'') }"
                             >
+                                <template v-slot:item_not_used_template="{ parent, item, on, attrs }">
+                                    <v-list-item
+                                        ripple
+                                        @click="on.click"
+                                    >
+                                        <v-list-item-action>
+                                            <v-icon v-if="attrs.inputValue">mdi-checkbox-marked</v-icon>
+                                            <v-icon v-else>mdi-checkbox-blank-outline</v-icon>
+                                        </v-list-item-action>
+                                        <v-list-item-content>
+                                            <v-list-item-title>
+                                                {{ item.label }} {{ parent.props }}
+                                            </v-list-item-title>
+                                        </v-list-item-content>
+                                    </v-list-item>
+                                </template>
+
                                 <template v-slot:prepend-item>
                                     <v-list-item
                                     >
@@ -320,12 +308,12 @@ globalThis.videoList = {
                                     <v-list-item>
                                         <v-list-item-action>
                                             <v-switch
-                                                v-model="column.hideDisabledItems"
+                                                v-model="column.hideEmptyOptions"
                                             ></v-switch>
                                         </v-list-item-action>
                                         <v-list-item-content>
                                             <v-list-item-title>
-                                                Hide unavailable options
+                                                Hide empty options
                                             </v-list-item-title>
                                         </v-list-item-content>
                                     </v-list-item>
