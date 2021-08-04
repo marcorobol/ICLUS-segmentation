@@ -3,193 +3,141 @@ var router = express.Router();
 const db = require('../db');
 
 
+function caseOf (field, ranges) {
+  let SQL = ''
+  for (r of ranges) {
+    let [range, leftParenthesis, left, right, rightParenthesis] = r
+    if (left && right) {
+      let label = `${leftParenthesis} ${left} , ${right} ${rightParenthesis}`
+
+      let excludes = []
+      for ( let [exclude, value] of [ [leftParenthesis=='(', left], [rightParenthesis==')', right] ] ) {
+        if (exclude)
+        excludes.push(value)
+      }
+
+      let notIn = (excludes.length>0?`AND ${field} NOT IN (${excludes.join(',')})`:'')
+      SQL = SQL + `when ${field} between ${left} and ${right} ${notIn} then '${label}' `
+    }
+    else {
+      let label = `${left}`
+      SQL = SQL + `when ${field} = ${left} then '${label}' `
+    }
+  }
+  return SQL;
+}
 
 router.get('/', async function(req, res, next) {
 
-  const where = []
-  if (req.query.where && Array.isArray(req.query.where))
-    where.push.apply( where, req.query.where )
-  else if (req.query.where)
-    where.push( req.query.where )
-
-  // console.log(req.query.groupBy);
-
+  /**
+   * Request params
+   */
+  const where = (Array.isArray(req.query.where)?req.query.where:(req.query.where?[req.query.where]:[]))
   const groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
-  const groupByDepth = req.query.groupBy.includes('depth')
-  const groupByFrequency = req.query.groupBy.includes('frequency')
-  const groupByPixelDensity = req.query.groupBy.includes('pixel_density')
-  const groupByStructure = req.query.groupBy.includes('structure')
-  const groupByRating = req.query.groupBy.includes('rating')
-  const groupByStatus = req.query.groupBy.includes('status')
 
-  // console.log(req.query.roundDepthBy);
-  // console.log(req.query.roundFrequencyBy);
-  // console.log(req.query.roundPixelDensityBy);
-  
   const roundDepthBy = req.query.roundDepthBy;
   const roundFrequencyBy = req.query.roundFrequencyBy;
   const roundPixelDensityBy = req.query.roundPixelDensityBy;
-  
-  let SELECT = [];
-  for (by of groupBy) {
-    SELECT.push(by)
-  }
-  // if (groupByDepth)         SELECT.push(`depth`)
-  // if (groupByFrequency)     SELECT.push(`frequency`)
-  // if (groupByPixelDensity)  SELECT.push(`pixel_density`)
-  // if (groupByStructure)     SELECT.push(`structure`)
-  // if (groupByRating)        SELECT.push(`rating`)
-  // if (groupByStatus)        SELECT.push(`status`)
-  
-  let SUBSELECT = [];
-  for (by of groupBy) {
-    if      (by=="depth")         SUBSELECT.push((roundDepthBy?`ROUND ( depth/${roundDepthBy} )*${roundDepthBy} AS depth`:`depth`))
-    else if (by=="frequency")     SUBSELECT.push((roundFrequencyBy?`ROUND ( frequency/${roundFrequencyBy} )*${roundFrequencyBy} AS frequency`:`frequency`))
-    else if (by=="pixel_density")  SUBSELECT.push((roundPixelDensityBy?`ROUND ( pixel_density/${roundPixelDensityBy} )*${roundPixelDensityBy} AS pixel_density`:`pixel_density`))
-    else if (by=="structure")     SUBSELECT.push(`structure_id AS structure`)
-    else if (by=="rating")        SUBSELECT.push(`rating_operator AS rating`)
-    else if (by=="status")        SUBSELECT.push(`analysis_status AS status`)
-    else                           SUBSELECT.push(by)
-  }
-  // if (groupByDepth)         SUBSELECT.push((roundDepthBy?`ROUND ( depth/${roundDepthBy} )*${roundDepthBy} AS depth`:`depth`))
-  // if (groupByFrequency)     SUBSELECT.push((roundFrequencyBy?`ROUND ( frequency/${roundFrequencyBy} )*${roundFrequencyBy} AS frequency`:`frequency`))
-  // if (groupByPixelDensity)  SUBSELECT.push((roundPixelDensityBy?`ROUND ( pixel_density/${roundPixelDensityBy} )*${roundPixelDensityBy} AS pixel_density`:`pixel_density`))
-  // if (groupByStructure)     SUBSELECT.push(`structure_id AS structure`)
-  // if (groupByRating)        SUBSELECT.push(`rating_operator AS rating`)
-  // if (groupByStatus)        SUBSELECT.push(`analysis_status AS status`)
-  
-  let GROUP_BY = [];
-  for (by of groupBy) {
-    GROUP_BY.push(by)
-  }
-  // if (groupByDepth)         GROUP_BY.push(`depth`)
-  // if (groupByFrequency)     GROUP_BY.push(`frequency`)
-  // if (groupByPixelDensity)  GROUP_BY.push(`pixel_density`)
-  // if (groupByStructure)     GROUP_BY.push(`structure`)
-  // if (groupByRating)        GROUP_BY.push(`rating`)
-  // if (groupByStatus)        GROUP_BY.push(`status`)
-  
-  let ORDER_BY = [];
-  for (by of groupBy) {
-    if (by=="structure")          ORDER_BY.push(`structure ASC`)
-    else if (by=="rating")        ORDER_BY.push(`rating ASC`)
-    else if (by=="status")        ORDER_BY.push(`status ASC`)
-    else                           ORDER_BY.push(by+" ASC")
-  }
-  // let groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
-  // for (let gp of groupBy){
-  //   if      (gp=='depth')         ORDER_BY.push(`depth ASC`)
-  //   else if (gp=='frequency')     ORDER_BY.push(`frequency ASC`)
-  //   else if (gp=='pixel_density') ORDER_BY.push(`pixel_density ASC`)
-  //   else if (gp=='structure')     ORDER_BY.push(`structure ASC`)
-  //   else if (gp=='rating')        ORDER_BY.push(`rating ASC`)
-  //   else if (gp=='status')        ORDER_BY.push(`status ASC`)
-  // }
 
   /**
-   * Compact version
+   * Query subparts
    */
-  let my_query = `SELECT ${SELECT.join(', ')} ${(SELECT.length>0?',':'')}
-SUM (_frames) AS number_of_frames,\
-COUNT (_file_id) AS number_of_files,\
-COUNT (DISTINCT _analysis_id) AS number_of_analyses,\
-COUNT (DISTINCT _patient_id) AS number_of_patients,\
-COUNT (DISTINCT _operator_id) AS number_of_operators,\
-ARRAY_AGG (DISTINCT _operator_id) operators FROM (
-SELECT ${SUBSELECT.join(', ')}${(SUBSELECT.length>0?',':'')}
-frames AS _frames,\
-file_id AS _file_id,\
-analysis_id AS _analysis_id,\
-patient_id AS _patient_id,\
-operator_id AS _operator_id FROM app_file_flat
-WHERE frames IS NOT NULL ${where.length>0?'AND':''} ${where.map( w=>'('+w+')').join(' AND ')} ) AS app_file_flat_rounded
+  let SUBSUBSELECT = [];
+  let SUBSELECT = [];
+  let SELECT = [];
+  let GROUP_BY = [];
+  let ORDER_BY = [];
+  let WHERE = [];
+
+  /**
+   * WHERE
+   */
+  WHERE.push('frames IS NOT NULL')
+  for (wh of where)
+    WHERE.push( wh )
+  
+  
+  for (by of groupBy) {
+
+    /**
+     * groupBy fields (with eventual alias)
+     */
+    let alis_field = by.match(/(\w+)/g)[0];
+    let field = alis_field
+    if   (alis_field=="structure")   field = `structure_id`
+    else if (alis_field=="rating")   field = `rating_operator`
+    else if (alis_field=="status")   field = `analysis_status`
+
+    /**
+     * SELECT
+     */
+    if   (alis_field != field)   SELECT.push(`__${field} AS ${alis_field}`)
+    else                         SELECT.push(`__${field} AS ${field}`)
+    // list of values in the around or in the cluster
+    SELECT.push(`ARRAY_AGG (DISTINCT __${field}) AS ${field}s`)
+
+    /**
+     * SUBSELECT __clustered
+     */
+    let ranges = [...by.matchAll(/(\(|\[)(\d*\.?\d*),*(\d*\.?\d*)(\)|\])/g)]
+    if(ranges.length>0) {
+      SUBSELECT.push(`(select case ${caseOf('_'+field,ranges)} else 'others' end) as __${field}`)
+    }
+    else {
+      SUBSELECT.push(`_${field} AS __${field}`)
+    }
+
+    /**
+     * SUBSUBSELECT _rounded
+     */
+    //::numeric similar to +0.00001
+    if      (field=="depth")         SUBSUBSELECT.push((roundDepthBy?`ROUND ( (depth::numeric)/${roundDepthBy} )*${roundDepthBy} AS _depth`:`depth AS _depth`))
+    else if (field=="frequency")     SUBSUBSELECT.push((roundFrequencyBy?`ROUND ( (frequency::numeric)/${roundFrequencyBy} )*${roundFrequencyBy} AS _frequency`:`frequency AS _frequency`))
+    else if (field=="pixel_density") SUBSUBSELECT.push((roundPixelDensityBy?`ROUND ( (pixel_density::numeric)/${roundPixelDensityBy} )*${roundPixelDensityBy} AS _pixel_density`:`pixel_density AS _pixel_density`))
+    else                             SUBSUBSELECT.push(field+' AS _'+field)
+
+    /**
+     * GROUP_BY and ORDER_BY
+     */
+    GROUP_BY.push('__'+field)
+    ORDER_BY.push('__'+field+" ASC")
+
+  }
+
+  /**
+   * Additional fields in SELECT SUBSELECT and SUBSUBSELECT
+   */
+  SELECT.push('SUM (frames) AS number_of_frames')
+  SELECT.push('COUNT (file_id) AS number_of_files')
+  SELECT.push('COUNT (DISTINCT analysis_id) AS number_of_analyses')
+  SELECT.push('COUNT (DISTINCT patient_id) AS number_of_patients')
+  SELECT.push('COUNT (DISTINCT operator_id) AS number_of_operators')
+  SELECT.push('ARRAY_AGG (DISTINCT operator_id) AS operators')
+  SUBSELECT.push('*')
+  SUBSUBSELECT.push('*')
+
+  /**
+   * Query: super compact version
+   */
+  let my_query =
+`SELECT ${SELECT.join(', ')} FROM (
+  SELECT ${SUBSELECT.join(', ')} FROM (
+    SELECT ${SUBSUBSELECT.join(', ')} FROM app_file_flat
+    WHERE ${WHERE.map( w=>'('+w+')').join(' AND ')}
+  ) AS _rounded
+) AS __clustered
 GROUP BY ${GROUP_BY.join(', ')} ORDER BY ${ORDER_BY.join(', ')}`;
   
-  /**
-   * Sliced version
-   */
-  // console.log(`
-  //   SELECT ${SELECT.join(', ')} ${(SELECT.length>0?',':'')} number_of_... FROM (
-  //     SELECT ${SUBSELECT.join(', ')} ${(SUBSELECT.length>0?',':'')} ..._id FROM app_file_flat
-  //     WHERE frames IS NOT NULL ${where.length>0?'AND':''} ${where.map( w=>'('+w+')').join(' AND ')}
-  //   ) AS app_file_flat_rounded
-  //   GROUP BY ${GROUP_BY.join(', ')}
-  //   ORDER BY ${ORDER_BY.join(', ')}
-  // `);
-
-
-
-
-
-  let new_query = `
-  SELECT
-    MAX (count_pixel_density) count_pixel_density,
-    MAX (count_depth) count_depth,
-    array_pixel_density,
-    array_depth,
-    SUM (number_of_frames) AS number_of_frames,
-    SUM (number_of_files) AS number_of_files,
-    SUM (number_of_analyses) AS number_of_analyses
-
-  FROM
-    (
-      SELECT 
-        COUNT (DISTINCT ROUND ( pixel_density/40 )*40) AS count_pixel_density,
-        COUNT (DISTINCT ROUND ( depth/20 )*20) AS count_depth,
-        ARRAY_AGG (DISTINCT ROUND ( pixel_density/40 )*40) AS array_pixel_density,
-        ARRAY_AGG (DISTINCT ROUND ( depth/20 )*20) AS array_depth,
-        SUM (frames) AS number_of_frames,
-        COUNT (file_id) AS number_of_files,
-        COUNT (DISTINCT analysis_id) AS number_of_analyses
-      FROM
-        app_file_flat
-      WHERE
-        --depth IS NOT NULL AND
-        analysis_status = 2
-      GROUP BY
-        analysis_id
-      
-    ) AS app_file_rounded
-    
-  GROUP BY
-    array_pixel_density,
-    array_depth
-  `
-
-  let esempio = `
-    SELECT
-    ROUND ( depth/5 )*5 AS depth_rounded,
-    SUM (frames) AS number_of_frames,
-    COUNT (file_id) AS number_of_files,
-    COUNT (DISTINCT analysis_id) AS number_of_analyses,
-    COUNT (DISTINCT patient_id) AS number_of_patients,
-    COUNT (DISTINCT operator_id) AS number_of_operator,
-    ARRAY_AGG (DISTINCT operator_id) operators
-
-    FROM
-    app_file_flat
-
-    WHERE
-    depth IS NOT NULL AND
-    analysis_status = 2
-
-    GROUP BY
-    depth_rounded
-
-    ORDER BY
-    depth_rounded DESC
-  `;
-
+  
+  // Execute query
   query_res = await db.query(my_query)
   .catch(err => {
     next(err);
   })
-  
-  // for (const row of rows) {
-  //     [row.structure_id, row.operator_id, row.patient_id, row.analysis_id, row.analysis_status, row.file_id, row.file_area_code, row.rating_operator]);
-  // }
-  
+
+  // Respond
   res.json(query_res.rows);
+
 });
 
 

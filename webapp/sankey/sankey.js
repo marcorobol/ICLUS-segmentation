@@ -225,7 +225,7 @@ globalThis.sankey = {
             if (this.roundFrequency!="") queries.push('roundFrequencyBy='+this.roundFrequency)
             if (this.roundPixelDensity!="") queries.push('roundPixelDensityBy='+this.roundPixelDensity)
     
-            return query_res = await fetch('../api/stats_federico?'+queries.join('&'))
+            return query_res = await fetch('../api/stats?'+queries.join('&'))
                 .then((resp) => resp.json()) // Transform the data into json
                 .catch( error => console.error(error) ); // If there is any error you will catch them here
             }
