@@ -222,9 +222,11 @@ globalThis.videoList = {
               .catch( error => console.error(error) ); // If there is any error you will catch them here
         },
 
-        computeOptionLabel: function ({text,value,options,select,filterName} = column) {
-            let filter = this.$options.filters[filterName]
-            return (opt) => (filter?filter(opt.id):(opt.id!=null?opt.id:'null')) + ' - ' + opt.counter + ' videos'
+        getFilterOfHeader: function (header) {
+            if ( filter = this.$options.filters[header.filterName] )
+                return filter
+            else // default filter
+                return (id) => (id!=null?id:'null')
         }
 
     },
@@ -261,7 +263,7 @@ globalThis.videoList = {
                                 v-model="column.select"
                                 :items="column.hideEmptyOptions?column.options.filter(o=>o.counter>0||column.select.includes(o.id)):column.options"
                                 item-value="id"
-                                :item-text="computeOptionLabel(column)"
+                                :item-text="opt => getFilterOfHeader(column)(opt.id) + ' - ' + opt.counter + ' videos'"
                                 :label="column.text"
                                 multiple
                                 chips
@@ -364,9 +366,9 @@ globalThis.videoList = {
                         <a v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
                             png
                         </a>
-                        <a v-bind:href=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code " >
+                        <router-link to="/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
                             Segment
-                        </a>
+                        </router-link>
                     </td>
                     <td>
                         <img v-if="item.depth"
