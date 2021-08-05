@@ -54,7 +54,9 @@ globalThis.sankey = {
 
             roundDepth: "",
             roundFrequency: "",
-            roundPixelDensity: "1"
+            roundPixelDensity: "1",
+
+            analysisIds:[1]
         }
     },
 
@@ -105,9 +107,6 @@ globalThis.sankey = {
                 null: 'Not rated'
             }
             return statusMap[id]
-        },
-        listOfIds: function(list) {
-            return (list?list.map( e => (e==null?'null':e) ).join(', '):'')
         }
     },
 
@@ -241,6 +240,12 @@ globalThis.sankey = {
                     cols="12"
                     sm="2"
                 >
+                    <query-binder
+                        query-field="number_of"
+                        v-model="valueOf"
+                        :options="valueOfOptions"
+                        options-value-field="value"
+                    ></query-binder>
                     <v-select
                         v-model="valueOf"
                         label="Plot # of"
@@ -259,6 +264,12 @@ globalThis.sankey = {
                     v-for="(field,key) in fields"
                     :key="key"
                 >
+                    <query-binder
+                        :query-field="key"
+                        v-model="field.value"
+                        :options="fieldOptions"
+                        options-value-field="value"
+                    ></query-binder>
                     <v-select
                         v-model="field.value"
                         :label="field.label"
@@ -278,6 +289,10 @@ globalThis.sankey = {
                     cols="12"
                     sm="2"
                 >
+                    <query-binder
+                        query-field="roundDepth"
+                        v-model="roundDepth"
+                    ></query-binder>
                     <v-text-field
                         v-model="roundDepth"
                         label="Depth rounding"
@@ -291,12 +306,15 @@ globalThis.sankey = {
                     cols="12"
                     sm="4"
                 >
+                    <query-binder
+                        query-field="groupDepth"
+                        v-model="groupDepth"
+                    ></query-binder>
                     <v-text-field
                         v-model="groupDepth"
                         label="Depth grouping"
                         placeholder="[50)[60,80)[80,100](100,120](120,140)[140,180][220][305]"
                         hint="Intervals with limits included [closed] or excluded (open) e.g. [3.1,5](1,4.5)[1,2)"
-                        hide-details
                     ></v-text-field>
                 </v-col>
 
@@ -305,6 +323,10 @@ globalThis.sankey = {
                     cols="12"
                     sm="2"
                 >
+                    <query-binder
+                        query-field="roundFrequency"
+                        v-model="roundFrequency"
+                    ></query-binder>
                     <v-text-field
                         v-model="roundFrequency"
                         label="Frequency rounding"
@@ -318,24 +340,52 @@ globalThis.sankey = {
                     cols="12"
                     sm="4"
                 >
+                    <query-binder
+                        query-field="groupFrequency"
+                        v-model="groupFrequency"
+                    ></query-binder>
                     <v-text-field
                         v-model="groupFrequency"
                         label="Frequency grouping"
                         placeholder="[50)[60,80)[80,100](100,120](120,140)[140,180][220][305]"
-                        hide-details
+                        hint="Intervals with limits included [closed] or excluded (open) e.g. [3.1,5](1,4.5)[1,2)"
                     ></v-text-field>
                 </v-col>
 
                 <v-col
                     class="d-flex"
                     cols="12"
-                    sm="6"
+                    sm="2"
                 >
                     <v-btn
                         elevation="2"
                         @click="refresh()"
                         block
                     >Update</v-btn>
+                </v-col>
+
+                <v-col
+                    class="d-flex"
+                    cols="12"
+                    sm="4"
+                >
+                    <v-select
+                        v-model="analysisIds"
+                        label="Analyses"
+                        :items="[{id:1},{id:2},{id:3},{id:4}]"
+                        item-value="id"
+                        :_item-text="opt => getFilterOfHeader(column)(opt.id) + ' - ' + opt.counter + ' videos'"
+                        multiple
+                        chips                        
+                    ></v-select>
+                    <editable-select
+                        v-model="analysisIds"
+                        :options="[{id:1,counter:1234},{id:2},{id:3},{id:4}]"
+                        options-value="id"
+                        :options-text="opt => (opt.id) + ' - ' + opt.counter + ' videos'"
+                        :options-hide="opt => opt.counter > 0"
+                        label="Analyses"
+                    ></editable-select>
                 </v-col>
 
                 <v-col
@@ -360,7 +410,7 @@ globalThis.sankey = {
                         v-model="groupPixelDensity"
                         label="Pixel density grouping"
                         placeholder=""
-                        hide-details
+                        hint="Intervals with limits included [closed] or excluded (open) e.g. [3.1,5](1,4.5)[1,2)"
                     ></v-text-field>
                 </v-col>
             </v-row>

@@ -48,16 +48,13 @@ globalThis.videoList = {
         // Pull from browser query into filters
         for (let {value,options,select} of this.headers) {
             
-            let strings = this.$route.query[value]
-            if(!Array.isArray(strings))
-                strings = [strings]
+            let queryValues = this.$route.query[value]
             
-            if (strings)
-                for (string of strings) {
-                    let found = options.find( opt => ''+opt.id == ''+string )
-                    if ( found!=undefined && !select.includes(found.id) )
-                        select.push(found.id)
-                }
+            for (string of ( queryValues ? ( Array.isArray(queryValues) ? queryValues : [queryValues] ) : [] ) ) {
+                let found = options.find( opt => ''+opt.id == ''+string )
+                if ( found!=undefined && !select.includes(found.id) )
+                    select.push(found.id)
+            }
             
         }
 
