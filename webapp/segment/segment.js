@@ -390,7 +390,7 @@ globalThis.segment = {
                                         <v-btn text
                                         @click="e1 = 2"
                                         >
-                                            Discard changes
+                                            Skip
                                         </v-btn>
                                         
                                     </v-stepper-content>
@@ -432,7 +432,7 @@ globalThis.segment = {
                                         <v-btn text
                                         @click="e1 = 3; changeStep(3)"
                                         >
-                                            Discard changes
+                                            Skip
                                         </v-btn>
                                     </v-stepper-content>
                             

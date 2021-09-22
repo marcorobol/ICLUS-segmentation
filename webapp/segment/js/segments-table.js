@@ -61,7 +61,10 @@ Vue.component('segment-table', {
             rateRules: [
               v => !!(v!=null) || 'Rate is required'
             ],
-            segments: []
+            segments: [],
+            patient_id: urlParams.patient_id,
+            analysis_id: urlParams.analysis_id,
+            area_code: urlParams.area_code,
         }
     },
     props: ['segmentationTool', 'player'],
@@ -132,6 +135,7 @@ Vue.component('segment-table', {
                             <tr v-for="seg in segments">
                                 <td>
                                     {{ seg.segmentation_id }}
+                                    <a :href="'/png/'+patient_id+'/'+analysis_id+'/'+area_code+'/'+seg.timestamp">png</a>
                                 </td>
                                 <td>
                                     {{ seg.timestamp }}

@@ -13,7 +13,9 @@ router.get('/', async function(req, res, next) { //?where=depth%20IS%20NOT%20NUL
   else if (req.query.where)
     where.push( req.query.where )
   
-  let query = `SELECT * FROM app_file_flat ${where.length>0?'WHERE '+where.map( w=>'('+w+')').join(' AND '):''}`;
+  let whereString = where.map( w=>'(' + w + ')' ).join(' AND ')
+  
+  let query = `SELECT * FROM app_file_flat ${where.length>0?'WHERE '+whereString:''}`;
   const query_res = await db.query(query)
   .catch(err => {
     next(err);

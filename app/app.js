@@ -63,6 +63,14 @@ app.use('/mp4', mp4_router);
 
 
 /**
+ * Png service
+ */
+const png_router = require('./png/png.js');
+app.use('/png', png_router);
+
+
+
+/**
  * Webapp
  */
 

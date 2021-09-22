@@ -16,7 +16,8 @@ globalThis.videoList = {
                 { text: "Depth", value: "depth", options:[], select: [] },
                 { text: "Frequency", value: "frequency", options:[], select: [] },
                 { text: "Focal point", value: "focal_point", options:[], select: [] },
-                { text: "Pixel density", value: "pixel_density", options:[], select: [] }
+                { text: "Pixel density", value: "pixel_density", options:[], select: [], filterName: "pixelDensity" },
+                { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] }
             ],
             
             roundDepthBy: "null",
@@ -91,6 +92,9 @@ globalThis.videoList = {
             }
             return statusMap[id]
         },
+        pixelDensity: function(num) {
+            return Math.round(num*100)/100
+        },
         listOfIds: function(list) {
             return (list?list.map( e => (e==null?'null':e) ).join(', '):'')
         }
@@ -129,7 +133,7 @@ globalThis.videoList = {
                     if(sel=="null" || sel==null)
                         whereOR.push(value+"%20IS%20NULL");
                     else if(sel!="any")
-                        if(value=="file_area_code")
+                        if(value=="file_area_code" || value=="profile_scanner_brand")
                             whereOR.push(value+"='"+sel+"'");
                         else
                             whereOR.push(value+"="+sel);
@@ -356,16 +360,30 @@ globalThis.videoList = {
                 <template v-slot:item.rating_operator="{ item }">
                     {{ item.rating_operator | ratingLabel }}
                 </template>
+                <template v-slot:item.pixel_density="{ item }">
+                    {{ item.pixel_density | pixelDensity }}
+                </template>
+                <template v-slot:item.profile_scanner_brand="{ item }">
+                    {{ item.profile_scanner_brand }} - {{ item.profile_label }}
+                </template>
 
                 <template v-slot:expanded-item="{ headers, item }">
-                    <td :colspan="headers.length-4">
-                        More info about {{ item.name }}
-                        <a v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
-                            png
+                    <td v-bind:colspan="headers.length-4">
+                        More info about {{ item.analysis_id }}_{{ item.file_area_code }}
+                        </br>
+                        <a v-bind:target=" 'png_' + item.analysis_id + item.file_area_code"
+                            v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
+                            Snapshot
                         </a>
-                        <router-link to="/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
-                            Segment
+                        </br>
+                        <router-link v-bind:to=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
+                            Segmentation tool
                         </router-link>
+                        </br>
+                        <a v-bind:target=" 'api_' + item.analysis_id + item.file_area_code"
+                            v-bind:href=" '/api/videos/' + item.analysis_id + '_' + item.file_area_code ">
+                            Api
+                        </a>
                     </td>
                     <td>
                         <img v-if="item.depth"
@@ -377,8 +395,8 @@ globalThis.videoList = {
                             v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_F.png' "
                         />
                     </td>
-                    <td>
-                        <img v-if="item.frequency"
+                    <td v-bind:colspan="2">
+                        <img v-if="item.focal_point | item.pixel_density"
                             v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_Fc.png' "
                         />
                     </td>
