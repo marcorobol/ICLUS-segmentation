@@ -369,23 +369,7 @@ globalThis.sankey = {
                     cols="12"
                     sm="4"
                 >
-                    <v-select
-                        v-model="analysisIds"
-                        label="Analyses"
-                        :items="[{id:1},{id:2},{id:3},{id:4}]"
-                        item-value="id"
-                        :_item-text="opt => getFilterOfHeader(column)(opt.id) + ' - ' + opt.counter + ' videos'"
-                        multiple
-                        chips                        
-                    ></v-select>
-                    <editable-select
-                        v-model="analysisIds"
-                        :options="[{id:1,counter:1234},{id:2},{id:3},{id:4}]"
-                        options-value="id"
-                        :options-text="opt => (opt.id) + ' - ' + opt.counter + ' videos'"
-                        :options-hide="opt => opt.counter > 0"
-                        label="Analyses"
-                    ></editable-select>
+                    
                 </v-col>
 
                 <v-col

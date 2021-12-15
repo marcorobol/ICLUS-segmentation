@@ -30,6 +30,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "handbrake-js": "^5.0.2",
     "jsonwebtoken": "^8.5.1",
+    "multer": "^1.4.4",
     "pg": "^8.5.1",
     "serve-index": "^1.9.1",
     "videojs-offset": "^2.1.3",

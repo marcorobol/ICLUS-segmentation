@@ -22,6 +22,12 @@
 
 
     <script src="./video-list/video-list.js"></script>
+
+
+    <script src="./segmentation-list/segmentation-list.js"></script>
+
+
+    <script src="./video-upload/video-upload.js"></script>
     
 
     <script src="./sankey/sankey.js"></script>
@@ -74,23 +80,23 @@
                 <router-link to="/">Home</router-link>
 
                 <v-spacer></v-spacer>
-                <router-link to="/video-list">Segmentations overview</router-link>
+                <router-link to="/video-list">Videos</router-link>
 
                 <v-spacer></v-spacer>
-                <a href="./segment">Segment a random video</a>
+                <router-link to="/segmentation-list">Sementations</router-link>
+
+                <v-spacer></v-spacer>
+                <a href="./segment">Segment a video</a>
                 <!-- <router-link to="/segment">Segment a random video</router-link> -->
+
+                <v-spacer></v-spacer>
+                <router-link to="/video-upload">Modify/Upload a video</router-link>
 
                 <v-spacer></v-spacer>
                 <router-link to="/sankey">Sankey</router-link>
 
                 <v-spacer></v-spacer>
-                <a href="/overview">Overview(Deprecated)</a>
-
-                <v-spacer></v-spacer>
-                <a href="/stats">Chart(Deprecated)</a>
-
-                <v-spacer></v-spacer>
-                <a href="/stats/sankey.html">Sankey(Deprecated)</a>
+                <a href="/stats">Chart</a>
 
             </v-app-bar>
 
@@ -114,6 +120,8 @@
                 { path: '/', component: { template: '<div>Hello!</div>' } },
                 { path: '/segment', component: globalThis.segment },
                 { path: '/video-list', component: globalThis.videoList },
+                { path: '/segmentation-list', component: globalThis.segmentationList },
+                { path: '/video-upload', component: globalThis.videoUpload },
                 { path: '/sankey', component: globalThis.sankey },
             ]
         })

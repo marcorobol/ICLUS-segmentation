@@ -1,23 +1,18 @@
 
 
-globalThis.videoList = {
+globalThis.segmentationList = {
 
     // props: ['patient_id', 'analysis_id', 'area_code'],
 
     data: () => {
         return {
             headers: [
-                { text: "Operator", value: "operator_id", options:[], select: [1001], filterName: "operatorName" },
-                { text: "Patient", value: "patient_id", options:[], select: [] },
+                { text: "Segmentation id", value: "segmentation_id", options:[], select: [] },
                 { text: "Analysis", value: "analysis_id", options:[], select: [] },
-                { text: "Area", value: "file_area_code", options:[], select: [] },
-                { text: "Status", value: "analysis_status", options:[], select: [], filterName: "covidStatus" },
-                { text: "Rating", value: "rating_operator", options:[], select: [], filterName: "ratingLabel" },
-                { text: "Depth", value: "depth", options:[], select: [] },
-                { text: "Frequency", value: "frequency", options:[], select: [] },
-                { text: "Focal point", value: "focal_point", options:[], select: [] },
-                { text: "Pixel density", value: "pixel_density", options:[], select: [], filterName: "pixelDensity" },
-                { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] }
+                { text: "Area", value: "area_code", options:[], select: [] },
+                { text: "Timestamp", value: "timestamp", options:[], select: [] },
+                { text: "Points", value: "points", options:[], select: [], filterName: "points"  },
+                { text: "Rate", value: "rate", options:[], select: [], filterName: "ratingLabel" }
             ],
             
             roundDepthBy: "null",
@@ -63,25 +58,6 @@ globalThis.videoList = {
     },
 
     filters: {
-        operatorName: function(id) {
-            const statusMap = {
-                1001: 'Andrea Smargiassi',
-                1014: 'Tiziano Perrone',
-                1015: 'Elena Torri',
-                1206: 'Fabiola Pugliese',
-                1255: 'Veronica Narvena Macioce'
-            }
-            return statusMap[id]
-        },
-        covidStatus: function(id) {
-            const statusMap = {
-                1: 'Suspect',
-                2: 'COVID-19',
-                3: 'Negative',
-                4: 'post-COVID-19'
-            }
-            return statusMap[id]
-        },
         ratingLabel: function(id) {
             const statusMap = {
                 0: 'Rated 0',
@@ -92,11 +68,11 @@ globalThis.videoList = {
             }
             return statusMap[id]
         },
-        pixelDensity: function(num) {
-            return Math.round(num*100)/100
-        },
         listOfIds: function(list) {
             return (list?list.map( e => (e==null?'null':e) ).join(', '):'')
+        },
+        points: function(list) {
+            return (list?list.map( e => JSON.stringify(e) ).join(', '):'')
         }
     },
 
@@ -133,7 +109,7 @@ globalThis.videoList = {
                     if(sel=="null" || sel==null)
                         whereOR.push(value+"%20IS%20NULL");
                     else if(sel!="any")
-                        if(value=="file_area_code" || value=="profile_scanner_brand")
+                        if(value=="area_code" || value=="profile_scanner_brand")
                             whereOR.push(value+"='"+sel+"'");
                         else
                             whereOR.push(value+"="+sel);
@@ -171,7 +147,7 @@ globalThis.videoList = {
             var queryParams = []
 
             // queryParams.push("where=depth%20IS%20NOT%20NULL")
-            queryParams.push("where=frames%20IS%20NOT%20NULL")
+            // queryParams.push("where=frames%20IS%20NOT%20NULL")
             
             for (field of this.selectedWhereParams(this.headers)) {
                 queryParams.push('where='+field)
@@ -183,7 +159,7 @@ globalThis.videoList = {
             // console.log(this.$route.query)
             
 
-            let query = '../api/videos?' + queryParams.join("&");
+            let query = '../api/segmentations?' + queryParams.join("&");
             
             // fetch('../api/videos?where=depth%20IS%20NOT%20NULL')
             fetch(query)
@@ -218,7 +194,7 @@ globalThis.videoList = {
             // if (this.roundFrequencyBy!="null") queries.push('roundFrequencyBy='+this.roundFrequencyBy)
             // if (this.roundPixelDensityBy!="null") queries.push('roundPixelDensityBy='+this.roundPixelDensityBy)
           
-            return query_res = await fetch('../api/stats?'+queryParams.join('&'))
+            return query_res = await fetch('../api/segmentations/stats?'+queryParams.join('&'))
               .then((resp) => resp.json()) // Transform the data into json
               .catch( error => console.error(error) ); // If there is any error you will catch them here
         },
@@ -329,79 +305,59 @@ globalThis.videoList = {
                 </template>
                 
 
-                <template v-slot:item.operator_id="{ item }">
-                        {{ item.operator_id }}
-                    <br/>
-                        {{ item.operator_id | operatorName }}
-                </template>
-                <template v-slot:item.patient_id="{ item }">
-                    <a v-bind:href=" '../unzipped/'+ item.patient_id +'/' ">
-                        {{ item.patient_id }}
-                    </a>
-                    <br/>
-                    {{ item.patient_key }}
-                </template>
                 <template v-slot:item.analysis_id="{ item }">
                     <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/' ">
                         {{ item.analysis_id }}
                     </a>
-                    <br/>
-                    <router-link v-bind:to=" '/video-upload?operator_id='+ item.operator_id +'&patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id">
-                        Modify
-                    </router-link>
                 </template>
                 <template v-slot:item.file="{ item }">
-                    <a v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
+                    <a v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'.png' ">
                         png
                     </a>
-                    <a v-bind:href=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code " >
+                    <a v-bind:href=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.area_code " >
                         Segment
                     </a>
                 </template>
-                <template v-slot:item.analysis_status="{ item }">
-                    {{ item.analysis_status | covidStatus }}
+
+                <template v-slot:item.points="{ item }">
+                    {{ item.points | points }}
                 </template>
+
                 <template v-slot:item.rating_operator="{ item }">
                     {{ item.rating_operator | ratingLabel }}
-                </template>
-                <template v-slot:item.pixel_density="{ item }">
-                    {{ item.pixel_density | pixelDensity }}
-                </template>
-                <template v-slot:item.profile_scanner_brand="{ item }">
-                    {{ item.profile_scanner_brand }} - {{ item.profile_label }}
                 </template>
 
                 <template v-slot:expanded-item="{ headers, item }">
                     <td v-bind:colspan="headers.length-4">
-                        More info about {{ item.analysis_id }}_{{ item.file_area_code }}
+                        More info about {{ item.analysis_id }}_{{ item.area_code }}
                         </br>
-                        <a v-bind:target=" 'png_' + item.analysis_id + item.file_area_code"
-                            v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
+                        <a v-bind:target=" 'png_' + item.analysis_id + item.area_code"
+                            v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'.png' ">
                             Snapshot
                         </a>
                         </br>
-                        <router-link v-bind:to=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
+                        <router-link v-bind:to=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.area_code">
                             Segmentation tool
                         </router-link>
                         </br>
-                        <a v-bind:target=" 'api_' + item.analysis_id + item.file_area_code"
-                            v-bind:href=" '/api/videos/' + item.analysis_id + '_' + item.file_area_code ">
+                        <a v-bind:target=" 'api_' + item.analysis_id + item.area_code"
+                            v-bind:href=" '/api/videos/' + item.analysis_id + '_' + item.area_code ">
                             Api
                         </a>
                     </td>
                     <td>
                         <img v-if="item.depth"
-                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_D.png' "
+                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'_D.png' "
                         />
                     </td>
                     <td>
                         <img v-if="item.frequency"
-                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_F.png' "
+                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'_F.png' "
                         />
                     </td>
                     <td v-bind:colspan="2">
                         <img v-if="item.focal_point | item.pixel_density"
-                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_Fc.png' "
+                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'_Fc.png' "
                         />
                     </td>
                 </template>
@@ -414,4 +370,4 @@ globalThis.videoList = {
         </div>
     `
 }
-Vue.component('video-list', videoList)
+Vue.component('segmentation-list', segmentationList)
