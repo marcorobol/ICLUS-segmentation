@@ -67,9 +67,25 @@ globalThis.editableSelect = {
             :item-text="optionsText"
             :label="label"
             multiple
-            chips
-            v-on:change="$emit('input', select)"
+            small-chips
+            outlined
+            dense
+            loader-height="20"
+            v-on:change="$emit('input', select); $emit('change', select)"
         >
+
+            <template v-slot:selection="{ item, index }">
+                <v-chip v-if="index <= 5">
+                    <span>{{ optionsText(item) }}</span>
+                </v-chip>
+                <span
+                    v-if="index == 5"
+                    class="grey--text text-caption"
+                >
+                    (+{{ value.length - 6 }} others)
+                </span>
+            </template>
+
             <template v-slot:item_not_used_template="{ parent, item, on, attrs }">
                 <v-list-item
                     ripple

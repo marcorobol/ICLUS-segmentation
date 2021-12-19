@@ -290,8 +290,8 @@ globalThis.segmentationList = {
         },
 
         getFilterOfHeader: function (header) {
-            let filter
-            if ( filter = this.$options.filters[header.filterName] )
+            let filter = this.$options.filters[header.filterName]
+            if ( filter != undefined )
                 return filter
             else // default filter
                 return (id) => (id!=null?id:'null')

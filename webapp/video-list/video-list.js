@@ -65,14 +65,14 @@ globalThis.videoList = {
 
     filters: {
         operatorName: function(id) {
-            const statusMap = {
+            const operatorMap = {
                 1001: 'Andrea Smargiassi',
                 1014: 'Tiziano Perrone',
                 1015: 'Elena Torri',
                 1206: 'Fabiola Pugliese',
                 1255: 'Veronica Narvena Macioce'
             }
-            return statusMap[id]
+            return (id in operatorMap?operatorMap[id]:id)
         },
         covidStatus: function(id) {
             const statusMap = {
@@ -84,14 +84,17 @@ globalThis.videoList = {
             return statusMap[id]
         },
         ratingLabel: function(id) {
-            const statusMap = {
+            return {
                 0: 'Rated 0',
                 1: 'Rated 1',
                 2: 'Rated 2',
                 3: 'Rated 3',
-                null: 'Not rated'
-            }
-            return statusMap[id]
+                4: 'Consolidation',
+                5: 'Pleural Line',
+                6: 'Pleural Effusion',
+                7: 'Vertical Artifact',
+                null: 'Not labelled'
+            }[id]
         },
         pixelDensity: function(num) {
             return Math.round(num*100)/100
@@ -225,7 +228,8 @@ globalThis.videoList = {
         },
 
         getFilterOfHeader: function (header) {
-            if ( filter = this.$options.filters[header.filterName] )
+            let filter = this.$options.filters[header.filterName]
+            if ( filter != undefined )
                 return filter
             else // default filter
                 return (id) => (id!=null?id:'null')
@@ -337,20 +341,12 @@ globalThis.videoList = {
                         {{ item.operator_id | operatorName }}
                 </template>
                 <template v-slot:item.patient_id="{ item }">
-                    <a v-bind:href=" '../unzipped/'+ item.patient_id +'/' ">
-                        {{ item.patient_id }}
-                    </a>
+                    {{ item.patient_id }}
                     <br/>
-                    {{ item.patient_key }}
+                    ( {{ item.patient_key }} )
                 </template>
                 <template v-slot:item.analysis_id="{ item }">
-                    <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/' ">
-                        {{ item.analysis_id }}
-                    </a>
-                    <br/>
-                    <router-link v-bind:to=" '/video-upload?operator_id='+ item.operator_id +'&patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id">
-                        Modify
-                    </router-link>
+                    {{ item.analysis_id }}
                 </template>
                 <template v-slot:item.file="{ item }">
                     <a v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
@@ -440,7 +436,7 @@ globalThis.videoList = {
                             v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_F.png' "
                         />
                     </td>
-                    <td v-bind:colspan="2">
+                    <td v-bind:colspan="3">
                         <img v-if="item.focal_point | item.pixel_density"
                             v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'_Fc.png' "
                         />

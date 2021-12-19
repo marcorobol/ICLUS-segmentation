@@ -72,7 +72,8 @@ router.use('/:patientId/:analysisId/:area_code/raw/metadata', async function(req
 
 
 
-router.use('/:patientId/:analysisId/:area_code/video', async function(req, res) {
+
+const mp4ConverterHandler = async function(req, res) {
   let patientId = req.patientId;
   let analysisId = req.analysisId;
   let area_code = req.params.area_code;
@@ -101,9 +102,7 @@ router.use('/:patientId/:analysisId/:area_code/video', async function(req, res) 
   }
 
   res.sendFile(fileName+'.mp4', { root: folder })
-});
-
-
+}
 
 function findFile(folder, fileName) {
   let files = fs.readdirSync(folder);
@@ -112,6 +111,28 @@ function findFile(folder, fileName) {
         return f;
     }
 }
+
+router.get('/:patientId/:analysisId/:area_code/video', mp4ConverterHandler)
+
+
+
+
+
+router.get('/convert_all_video', async function(req, res, next) {
+  
+  const query_res = await db.query(`SELECT * FROM app_file_flat`).catch(next)
+  for (row of query_res.rows) {
+    console.log("Converting ", row.patient_id, row.analysis_id, row.file_area_code)
+    if(row.patient_id && row.analysis_id && row.file_area_code)
+      try{
+        await mp4ConverterHandler(
+          { patientId: row.patient_id, analysisId: row.analysis_id, params: {area_code: row.file_area_code} },
+          { sendFile: (a,aa)=>{} }
+        )
+      } catch{ (err) => console.log("Skipping ", row.patient_id, row.analysis_id, row.file_area_code) }
+  }
+  
+});
 
 
 
