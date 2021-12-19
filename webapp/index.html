@@ -149,12 +149,12 @@
 
                 let vue_this = this;
                 
-                query_res = await fetch(`../api/segmentations/stats`)
-                    .then((resp) => resp.json()) // Transform the data into json
-                    .catch( error => console.error(error) ); // If there is any error you will catch them here
-                for (r of query_res) {
-                    this.segmentations_stats[r.rate] = r.count
-                }
+                // query_res = await fetch(`../api/segmentations/stats`)
+                //     .then((resp) => resp.json()) // Transform the data into json
+                //     .catch( error => console.error(error) ); // If there is any error you will catch them here
+                // for (r of query_res) {
+                //     this.segmentations_stats[r.rate] = r.count
+                // }
                 
             }
         })

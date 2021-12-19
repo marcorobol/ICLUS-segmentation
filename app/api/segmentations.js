@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 const db = require('../db');
 
-router.get('/', async function(req, res) {
+router.get('/', async function(req, res, next) {
   // let client = await req.pool.connect();
   // let query = `SELECT * FROM segmentations WHERE CONCAT(analysis_id,'_',area_code) = $1 `
   // console.log(query)
@@ -19,11 +19,12 @@ router.get('/', async function(req, res) {
     where.push( req.query.where )
   
   if (req.query.analysis_id && req.query.area_code)
-    where.push.apply( where, "CONCAT(analysis_id,'_',area_code) = " + req.query.analysis_id + "_" + req.query.area_code )
+    where.push( "CONCAT(analysis_id,'_',area_code) = '" + req.query.analysis_id + "_" + req.query.area_code + "'")
   
   let whereString = where.map( w=>'(' + w + ')' ).join(' AND ')
   
   let query = `SELECT * FROM segmentations ${where.length>0?'WHERE '+whereString:''}`;
+  console.log(query)
   const query_res = await db.query(query)
   .catch(err => {
     next(err);
@@ -32,17 +33,20 @@ router.get('/', async function(req, res) {
   res.json(query_res.rows);
 });
 
-router.get('/stats', async function(req, res) {
-  let client = await req.pool.connect();
-  let query = `SELECT rate,	COUNT(*) as count FROM segmentations GROUP BY rate`
-  console.log(query)
-  let query_res = await client.query(query)
-  .catch(err => {
-    console.log(err.stack)
-  })
-  client.release()
-  res.json(query_res.rows);
-});
+var segmentations_stats = require('./segmentations_stats');
+router.use('/stats', segmentations_stats)
+
+// router.get('/stats', async function(req, res) {
+//   let client = await req.pool.connect();
+//   let query = `SELECT rate,	COUNT(*) as count FROM segmentations GROUP BY rate`
+//   console.log(query)
+//   let query_res = await client.query(query)
+//   .catch(err => {
+//     console.log(err.stack)
+//   })
+//   client.release()
+//   res.json(query_res.rows);
+// });
 
 router.post('/', async function(req, res) {
   let client = await req.pool.connect();

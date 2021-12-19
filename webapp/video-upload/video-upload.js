@@ -273,12 +273,13 @@ globalThis.videoUpload = {
                 formData.append('focal_point', this.editedItem.focal_point)
                 formData.append('pixel_density', this.editedItem.pixel_density)
                 formData.append('profile_scanner_brand', this.editedItem.profile_scanner_brand)
-                formData.append('file', this.editedItem.file, this.editedItem.file.name)
+                formData.append('file', this.editedItem.file)
+                console.log(formData)
 
                 await fetch('../api/videos/', {
                     method: 'POST',
-                    body: JSON.stringify(this.editedItem),
-                    headers: { 'Content-Type': 'application/json' }
+                    body: formData//JSON.stringify(this.editedItem),
+                    // headers: { 'Content-Type': 'application/json' }
                 })
                 .catch( error => console.error(error) );// If there is any error you will catch them here
             }
@@ -497,7 +498,7 @@ globalThis.videoUpload = {
                 </template>
 
                 <template v-slot:expanded-item="{ headers, item }">
-                    <td v-bind:colspan="headers.length-4">
+                    <td v-bind:colspan="headers.length-6">
                         More info about {{ item.analysis_id }}_{{ item.file_area_code }}
                         </br>
                         <a v-bind:target=" 'png_' + item.analysis_id + item.file_area_code"

@@ -56,7 +56,15 @@ globalThis.sankey = {
             roundFrequency: "",
             roundPixelDensity: "1",
 
-            analysisIds:[1]
+            operatorIds:[],
+            patientIds:[],
+            analysisIds:[1080, 1083, 1141, 1140, 1139, 1142, 1143, 1144, 1537, 1538, 1539, 1540, 1541, 1543, 1546, 1545, 1547, 1548, 1639, 
+                1365, 1366, 1368, 1375, 1378, 1380, 1384, 1524, 1521, 1720, 1721, 1722, 1727, 1728, 1730, 1731, 1802, 1804, 1805, 1806, 
+                1047, 1048, 1119, 1120, 1122, 1124, 1126, 1127, 1128, 1129, 1133, 1149, 1150, 1151, 1152, 1153, 1155, 1156, 1157, 1158, 1159, 1160, 1161, 1162, 1163, 1212, 1213, 1222, 1223, 1224, 1247, 1252, 1265, 1266, 1267, 1268, 1269, 1270, 1305, 1306, 1309, 1310, 1311, 1312, 1313, 1314, 1315, 1317, 1323, 1330, 1331, 1332, 1381, 1382, 1388, 1389, 1390, 1391, 1392, 1393, 1394, 1395, 1396, 1397, 1398, 1405, 1406, 1407, 1408, 1409, 1410, 1411, 1412, 1413, 1414, 1415, 1416, 1417, 1418, 1419, 1420, 1552, 1553, 1564, 1565, 1566, 1567, 1570, 1571, 1574, 1576, 1580, 1581, 1582,
+                
+                1808, 1809, 1812, 1920, 1814, 1914, 1915, 1916, 1917, 1919, 1939,
+                1821, 1824, 1826, 1832, 1833, 1834, 1835, 1836, 1837, 1838, 1839, 1840, 1841, 1843, 1844, 1817, 1818, 1819, 1820, 1823, 1825, 1828, 1829, 1830, 1831, 1842, 1845, 1846, 1847, 1848, 1849, 1850, 1851, 1852, 1853, 1854, 1855, 1856, 1857, 1858, 1859, 1860, 1861, 1862, 1863, 1865, 1866, 1867, 1868, 1869, 1864, 1880, 1881, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1870, 1871, 1872, 1873, 1874, 1875, 1876, 1877, 1878, 1879, 1889, 1890, 1891, 1892, 1893, 1894, 1895, 1896, 1897, 1898, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1910, 1911, 1912, 1899, 1901, 1902, 1921, 1922, 1923, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1932, 1933, 1934, 1935, 1936, 1937
+            ]
         }
     },
 
@@ -223,6 +231,9 @@ globalThis.sankey = {
             if (this.roundDepth!="") queries.push('roundDepthBy='+this.roundDepth)
             if (this.roundFrequency!="") queries.push('roundFrequencyBy='+this.roundFrequency)
             if (this.roundPixelDensity!="") queries.push('roundPixelDensityBy='+this.roundPixelDensity)
+
+            
+            if (this.analysisIds) queries.push('where='+this.analysisIds.map( id => 'analysis_id='+id ).join(' OR '))
     
             return query_res = await fetch('../api/stats?'+queries.join('&'))
                 .then((resp) => resp.json()) // Transform the data into json
@@ -369,7 +380,20 @@ globalThis.sankey = {
                     cols="12"
                     sm="4"
                 >
-                    
+                    <editable-select
+                        v-model="analysisIds"
+                        :options="[]"
+                        options-value="id"
+                        :options-text="opt => (opt.id) + ' - ' + opt.counter + ' videos'"
+                        label="Analyses"
+                    ></editable-select>
+                    <v-text-field
+                        :value="analysisIds"
+                        v-on:change="analysisIds = $event.replaceAll(' ','').split(',')"
+                        label="Analysis ids"
+                        placeholder="1081"
+                        hint="Coma separated ids"
+                    ></v-text-field>
                 </v-col>
 
                 <v-col

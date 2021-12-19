@@ -35,9 +35,9 @@ router.get('/', async function(req, res, next) {
   const where = (Array.isArray(req.query.where)?req.query.where:(req.query.where?[req.query.where]:[]))
   const groupBy = (Array.isArray(req.query.groupBy)?req.query.groupBy:[req.query.groupBy])
 
-  const roundDepthBy = req.query.roundDepthBy;
-  const roundFrequencyBy = req.query.roundFrequencyBy;
-  const roundPixelDensityBy = req.query.roundPixelDensityBy;
+  // const roundDepthBy = req.query.roundDepthBy;
+  // const roundFrequencyBy = req.query.roundFrequencyBy;
+  // const roundPixelDensityBy = req.query.roundPixelDensityBy;
 
   /**
    * Query subparts
@@ -52,7 +52,6 @@ router.get('/', async function(req, res, next) {
   /**
    * WHERE
    */
-  // WHERE.push('frames IS NOT NULL')
   for (wh of where)
     WHERE.push( wh )
   
@@ -60,19 +59,14 @@ router.get('/', async function(req, res, next) {
   for (by of groupBy) {
 
     /**
-     * groupBy fields (with eventual alias)
+     * groupBy fields
      */
-    let alis_field = by.match(/(\w+)/g)[0];
-    let field = alis_field
-    if   (alis_field=="structure")   field = `structure_id`
-    else if (alis_field=="rating")   field = `rating_operator`
-    else if (alis_field=="status")   field = `analysis_status`
+    let field = by.match(/(\w+)/g)[0];
 
     /**
      * SELECT
      */
-    if   (alis_field != field)   SELECT.push(`__${field} AS ${alis_field}`)
-    else                         SELECT.push(`__${field} AS ${field}`)
+    SELECT.push(`__${field} AS ${field}`)
     // list of values in the around or in the cluster
     SELECT.push(`ARRAY_AGG (DISTINCT __${field}) AS ${field}s`)
 
@@ -91,10 +85,11 @@ router.get('/', async function(req, res, next) {
      * SUBSUBSELECT _rounded
      */
     //::numeric similar to +0.00001
-    if      (field=="depth")         SUBSUBSELECT.push((roundDepthBy?`ROUND ( (depth::numeric)/${roundDepthBy} )*${roundDepthBy} AS _depth`:`depth AS _depth`))
-    else if (field=="frequency")     SUBSUBSELECT.push((roundFrequencyBy?`ROUND ( (frequency::numeric)/${roundFrequencyBy} )*${roundFrequencyBy} AS _frequency`:`frequency AS _frequency`))
-    else if (field=="pixel_density") SUBSUBSELECT.push((roundPixelDensityBy?`ROUND ( (pixel_density::numeric)/${roundPixelDensityBy} )*${roundPixelDensityBy} AS _pixel_density`:`pixel_density AS _pixel_density`))
-    else                             SUBSUBSELECT.push(field+' AS _'+field)
+    // if      (field=="depth")         SUBSUBSELECT.push((roundDepthBy?`ROUND ( (depth::numeric)/${roundDepthBy} )*${roundDepthBy} AS _depth`:`depth AS _depth`))
+    // else if (field=="frequency")     SUBSUBSELECT.push((roundFrequencyBy?`ROUND ( (frequency::numeric)/${roundFrequencyBy} )*${roundFrequencyBy} AS _frequency`:`frequency AS _frequency`))
+    // else if (field=="pixel_density") SUBSUBSELECT.push((roundPixelDensityBy?`ROUND ( (pixel_density::numeric)/${roundPixelDensityBy} )*${roundPixelDensityBy} AS _pixel_density`:`pixel_density AS _pixel_density`))
+    // else                             
+      SUBSUBSELECT.push(field+' AS _'+field)
 
     /**
      * GROUP_BY and ORDER_BY
@@ -107,12 +102,9 @@ router.get('/', async function(req, res, next) {
   /**
    * Additional fields in SELECT SUBSELECT and SUBSUBSELECT
    */
-  SELECT.push('SUM (frames) AS number_of_frames')
-  SELECT.push('COUNT (file_id) AS number_of_files')
+  SELECT.push('COUNT (segmentation_id) AS number_of_segmentations')
   SELECT.push('COUNT (DISTINCT analysis_id) AS number_of_analyses')
-  SELECT.push('COUNT (DISTINCT patient_id) AS number_of_patients')
-  SELECT.push('COUNT (DISTINCT operator_id) AS number_of_operators')
-  SELECT.push('ARRAY_AGG (DISTINCT operator_id) AS operators')
+  SELECT.push('ARRAY_AGG (DISTINCT analysis_id) AS analyses')
   SUBSELECT.push('*')
   SUBSUBSELECT.push('*')
 
@@ -122,8 +114,8 @@ router.get('/', async function(req, res, next) {
   let my_query =
 `SELECT ${SELECT.join(', ')} FROM (
   SELECT ${SUBSELECT.join(', ')} FROM (
-    SELECT ${SUBSUBSELECT.join(', ')} FROM app_file_flat
-    ${WHERE.length>0?'WHERE':''} ${WHERE.map( w=>'('+w+')').join(' AND ')}
+    SELECT ${SUBSUBSELECT.join(', ')} FROM segmentations
+    ${(WHERE.length>0?'WHERE':'')} ${WHERE.map( w=>'('+w+')').join(' AND ')}
   ) AS _rounded
 ) AS __clustered
 GROUP BY ${GROUP_BY.join(', ')} ORDER BY ${ORDER_BY.join(', ')}`;

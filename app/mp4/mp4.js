@@ -4,12 +4,36 @@ var router = express.Router()
 const fs = require('fs')
 const hbjs = require('handbrake-js')
 const ffmpeg = require('fluent-ffmpeg')
+const db = require('../db');
+
+
+//Pre-process path and get valid patientId if missed
+router.use('/:patientId/:analysisId/', async function(req, res, next) {
+  
+  // patientId
+  if(req.params.patientId == undefined || req.params.patientId == 'undefined') {
+    const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.params.analysisId]).catch(next)
+    let patientId = query_res.rows[0].patient_id
+    console.log('redirecting to', req.baseUrl.split('/').slice(0,-2).join('/')+'/'+patientId+'/'+req.params.analysisId+req.url)
+    res.redirect(req.baseUrl.split('/').slice(0,-2).join('/')+'/'+patientId+'/'+req.params.analysisId+req.url)
+    return
+  }
+  else {
+    req.patientId = req.params.patientId
+  }
+
+  // analysisId
+  req.analysisId = req.params.analysisId
+
+  next()
+
+});
 
 
 
 router.use('/:patientId/:analysisId/:area_code/mp4/metadata', async function(req, res) {
-  let patientId = req.params.patientId;
-  let analysisId = req.params.analysisId;
+  let patientId = req.patientId;
+  let analysisId = req.analysisId;
   let area_code = req.params.area_code;
   
   let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
@@ -29,8 +53,8 @@ router.use('/:patientId/:analysisId/:area_code/mp4/metadata', async function(req
 
 
 router.use('/:patientId/:analysisId/:area_code/raw/metadata', async function(req, res) {
-  let patientId = req.params.patientId;
-  let analysisId = req.params.analysisId;
+  let patientId = req.patientId;
+  let analysisId = req.analysisId;
   let area_code = req.params.area_code;
   
   let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
@@ -49,8 +73,8 @@ router.use('/:patientId/:analysisId/:area_code/raw/metadata', async function(req
 
 
 router.use('/:patientId/:analysisId/:area_code/video', async function(req, res) {
-  let patientId = req.params.patientId;
-  let analysisId = req.params.analysisId;
+  let patientId = req.patientId;
+  let analysisId = req.analysisId;
   let area_code = req.params.area_code;
   
   let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'

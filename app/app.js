@@ -5,6 +5,7 @@ const fs = require('fs')
 const serveIndex = require('serve-index')
 const hbjs = require('handbrake-js')
 const path = require('path')
+const db = require('./db');
 
 
 
@@ -55,6 +56,22 @@ app.use('/unzipped', express.static(process.env.UNZIPPED), serveIndex(process.en
 
 
 /**
+ * Auto-complete fields
+ */
+app.use('/', async function(req, res, next) {
+  if (req.query.analysis_id && !req.query.patient_id){
+    const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.query.analysis_id]).catch(next)
+    req.query.patient_id = query_res.rows[0].patient_id
+    console.log("redirecting to", req.originalUrl+"patient_id="+req.query.patient_id)
+    res.redirect(req.originalUrl+"&patient_id="+req.query.patient_id);
+    return
+  }
+  next();
+})
+
+
+
+/**
  * Mp4 Service
  */
 const mp4_router = require('./mp4/mp4.js');
@@ -84,8 +101,7 @@ app.get('/webapp/segment', async function(req, res, next) {
 
     let client = await req.pool.connect();
     let query = `SELECT * FROM app_file_flat ORDER BY RANDOM() LIMIT 1;`
-    let query_res = await client.query(query)
-    .catch(err => { console.log(err.stack) })
+    let query_res = await client.query(query).catch(next)
     client.release()
     let patient_id = query_res.rows[0].patient_id
     let analysis_id = query_res.rows[0].analysis_id

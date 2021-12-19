@@ -1,6 +1,7 @@
 require('dotenv').config()
 var express = require('express')
 var router = express.Router()
+const db = require('../db');
 
 
 
@@ -12,6 +13,8 @@ var router = express.Router()
   // console.log('API '+req.method+' request on ' + req.path)
   next();
 })
+
+
 
 var api_segmentations = require('./segmentations');
 router.use('/segmentations', api_segmentations)

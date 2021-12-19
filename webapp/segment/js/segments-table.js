@@ -65,11 +65,15 @@ Vue.component('segment-table', {
             patient_id: urlParams.patient_id,
             analysis_id: urlParams.analysis_id,
             area_code: urlParams.area_code,
+            segmentId: '',
         }
     },
     props: ['segmentationTool', 'player'],
     mounted () {
-        fetchSegments().then(response => (this.segments = response))
+        fetchSegments().then(response => {
+            console.log('Segments:', response)
+            this.segments = response
+        })
     },
     methods: {
         load_seg: function (seg) {
@@ -77,6 +81,7 @@ Vue.component('segment-table', {
             this.segmentationTool.clearPoints();
             this.segmentationTool.addPoints(seg.points);
             this.rate = seg.rate;
+            this.segmentId = seg.segmentation_id
         },
         delete_seg: function (seg) {
             deleteSegmentation(seg.segmentation_id)
@@ -107,6 +112,12 @@ Vue.component('segment-table', {
     },
     template: `
         <v-container fluid>
+
+            <query-binder
+                query-field="segmentId"
+                v-model="segmentId"
+            ></query-binder>
+
             <v-row align="center">
 
                 <v-col>
@@ -174,7 +185,20 @@ Vue.component('segment-table', {
                                     md="8"
                                 >
                                     <v-select
-                                        :items="[0,1,2,3]"
+                                        :items="[
+                                            {header:'Assign a rate'},
+                                            {value:0, text:'0'},
+                                            {value:1, text:'1'},
+                                            {value:2, text:'2'},
+                                            {value:3, text:'3'},
+                                            {header:'Other segmentation labels'},
+                                            {value:4, text:'Consolidation'},
+                                            {value:5, text:'Pleural Line'},
+                                            {value:6, text:'Pleural Effusion'},
+                                            {value:7, text:'Vertical Artifact'}
+                                        ]"
+                                        item-value="value"
+                                        item-text="text"
                                         label="Give a rate"
                                         v-model="rate"
                                         :rules="rateRules"

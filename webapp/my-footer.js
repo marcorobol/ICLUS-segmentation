@@ -10,15 +10,15 @@ Vue.component('my-footer', {
             'Blog',
             'Contact Us',
         ],
-        segmentations_stats: {"null":0, 0:0, 1:0, 2:0, 3:0},
+        segmentations_stats: {0:0, 1:0, 2:0, 3:0, "null":0, 4:0, 5:0, 6:0, 7:0},
     }),
     async mounted () {
 
-        query_res = await fetch(`../api/segmentations/stats`)
+        query_res = await fetch(`../api/segmentations/stats?groupBy=rate`)
             .then((resp) => resp.json()) // Transform the data into json
             .catch( error => console.error(error) ); // If there is any error you will catch them here
         for (r of query_res) {
-            this.segmentations_stats[r.rate] = r.count
+            this.segmentations_stats[r.rate] = r.number_of_segmentations
         }
         
     },
@@ -37,18 +37,6 @@ Vue.component('my-footer', {
                 >
                     Segmentation progress:
 
-                    <v-chip
-                        class="ma-2"
-                        color="grey"
-                    >
-                        <v-avatar
-                            left
-                            class="grey darken-2"
-                        >
-                            {{ segmentations_stats["null"] }}
-                        </v-avatar>
-                        Missrated
-                    </v-chip>
                     <v-chip
                         class="ma-2"
                         color="green"
@@ -98,6 +86,72 @@ Vue.component('my-footer', {
                         Rated three
                     </v-chip>
 
+                </v-col>
+
+                <v-col
+                    class="primary py-4 text-center white--text"
+                    cols="12"
+                >
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["null"] }}
+                        </v-avatar>
+                        Not Labelled
+                    </v-chip>
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["4"] }}
+                        </v-avatar>
+                        Consolidation
+                    </v-chip>
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["5"] }}
+                        </v-avatar>
+                        Pleural Line
+                    </v-chip>
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["6"] }}
+                        </v-avatar>
+                        Pleural Effusion
+                    </v-chip>
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["7"] }}
+                        </v-avatar>
+                        Vertical Artifact
+                    </v-chip>
                 </v-col>
 
                 <v-col

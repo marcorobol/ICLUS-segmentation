@@ -4,6 +4,8 @@ var api_crops = require('./crops');
 var api_approvals = require('./approvals');
 const db = require('../db');
 const multer = require("multer");
+const fs = require('fs');
+
 
 
 router.get('/', async function(req, res, next) { //?where=depth%20IS%20NOT%20NULL
@@ -80,18 +82,57 @@ router.delete('/:video_ref', async function(req, res, next) {
   res.json(query_res.rows[0]);
 });
 
-router.post('/', async function(req, res, next) {
-  
-  let query = `INSERT INTO app_file_flat (operator_id, patient_id, analysis_id, file_area_code, analysis_status, rating_operator, depth, frequency, focal_point, pixel_density)
-    VALUES (${req.body.operator_id}, ${req.body.patient_id}, ${req.body.analysis_id}, ${req.body.file_area_code}, ${req.body.analysis_status}, ${req.body.rating_operator}, ${req.body.depth}, ${req.body.frequency}, ${req.body.focal_point}, ${req.body.pixel_density})`;
-  let query_res = await db.query(query)
-  .catch(err => {
-    next(err);
-  })
-  
-  // console.log(req.files)
 
-  res.json(query_res);
+
+const upload = multer({ dest: './uploads/' })
+router.post('/', upload.single('file'), async function(req, res, next) {
+  
+  let file = req.file
+  // file = {
+  //   fieldname: 'file',
+  //   originalname: 'steps and data.png',
+  //   encoding: '7bit',
+  //   mimetype: 'image/png',
+  //   destination: './uploads/',
+  //   filename: '2d16f5b084a7244ce1ea6451e98c1a97',
+  //   path: 'uploads\\2d16f5b084a7244ce1ea6451e98c1a97',
+  //   size: 146279
+  // }
+  let body = req.body
+  // body = {
+  //   operator_id: '1',
+  //   patient_id: '1',
+  //   analysis_id: '1',
+  //   file_area_code: '0',
+  //   analysis_status: '0',
+  //   rating_operator: '0',
+  //   depth: '0',
+  //   frequency: '0',
+  //   focal_point: '0',
+  //   pixel_density: '0',
+  //   profile_scanner_brand: '0'
+  // }
+  console.log(file, body)
+  
+  let patientId = body.patient_id
+  let analysisId = body.analysis_id
+  let areaCode = body.file_area_code
+
+  let assignedFolder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
+  let assignedFileName = 'video_'+analysisId+'_'+areaCode
+  let originalFileExtension = file.originalname.split('.').slice(-1)
+  let assignedCompletePath = assignedFolder+assignedFileName+'.'+originalFileExtension
+  
+  if ( !fs.existsSync(assignedFolder) )
+      fs.mkdirSync(assignedFolder, { recursive: true });
+  if ( !fs.existsSync(assignedCompletePath) ) {
+    fs.copyFile( file.path, assignedCompletePath, ()=>{} );
+  }
+
+  let query = `INSERT INTO app_file_flat (operator_id, patient_id, analysis_id, file_area_code, analysis_status, rating_operator, depth, frequency, focal_point, pixel_density)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`;
+  let query_res = await db.query(query, [body.operator_id, body.patient_id, body.analysis_id, body.file_area_code, body.analysis_status, body.rating_operator, body.depth, body.frequency, body.focal_point, body.pixel_density] ).catch( next)
+  
 });
 
 module.exports = router;

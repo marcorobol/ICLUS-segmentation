@@ -177,6 +177,11 @@ globalThis.segment = {
 
 
 
+                                <query-binder
+                                    query-field="step"
+                                    v-model="e1"
+                                ></query-binder>
+
                                 <v-stepper
                                 v-model="e1"
                                 vertical

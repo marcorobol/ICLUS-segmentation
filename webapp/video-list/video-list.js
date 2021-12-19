@@ -24,7 +24,8 @@ globalThis.videoList = {
             roundFrequencyBy: "null",
             roundPixelDensityBy: "null",
 
-            videos: []
+            videos: [],
+            query: ""
         }
     },
 
@@ -171,7 +172,7 @@ globalThis.videoList = {
             var queryParams = []
 
             // queryParams.push("where=depth%20IS%20NOT%20NULL")
-            queryParams.push("where=frames%20IS%20NOT%20NULL")
+            // queryParams.push("where=frames%20IS%20NOT%20NULL")
             
             for (field of this.selectedWhereParams(this.headers)) {
                 queryParams.push('where='+field)
@@ -183,7 +184,7 @@ globalThis.videoList = {
             // console.log(this.$route.query)
             
 
-            let query = '../api/videos?' + queryParams.join("&");
+            let query = this.query = '../api/videos?' + queryParams.join("&");
             
             // fetch('../api/videos?where=depth%20IS%20NOT%20NULL')
             fetch(query)
@@ -236,6 +237,7 @@ globalThis.videoList = {
         <v-container fluid>
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
+            <v-btn type="button" :href="query" :download="query" target="_blank">Get JSON data</v-btn>
 
             <template>
             <v-data-table
@@ -372,22 +374,61 @@ globalThis.videoList = {
                 </template>
 
                 <template v-slot:expanded-item="{ headers, item }">
-                    <td v-bind:colspan="headers.length-4">
-                        More info about {{ item.analysis_id }}_{{ item.file_area_code }}
+                    <td v-bind:colspan="headers.length-5">
+                        
                         </br>
-                        <a v-bind:target=" 'png_' + item.analysis_id + item.file_area_code"
-                            v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' ">
-                            Snapshot
+                        
+                        iclus-web.bluetensor.ai / 
+                        <a v-bind:href=" 'http://iclus-web.bluetensor.ai/operators/details/'+ item.operator_id ">operator_{{ item.operator_id }}</a>
+                        /
+                        <a v-bind:href=" 'http://iclus-web.bluetensor.ai/patients/details/'+ item.patient_id ">patient_{{ item.patient_id }}</a>
+                        /
+                        <a v-bind:href=" 'http://iclus-web.bluetensor.ai/analisys/details/'+ item.analysis_id ">analysis_{{ item.analysis_id }}</a>
+                        /
+                        area {{ item.file_area_code }}
+                        
+                        </br>
+                        
+                        Local files:
+                        <a v-bind:href=" '../unzipped/' ">WebDrive</a>:\\
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id ">patient_{{ item.patient_id }}</a>
+                        \\
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id ">analysis_{{ item.analysis_id }}</a>
+                        \\
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/segmented' ">segmented</a>
+                        |
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/cropped' ">cropped</a>
+                        |
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw' ">raw</a>
+                        \\
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' "
+                           v-bind:target=" 'png_' + item.analysis_id + item.file_area_code ">
+                            snapshot_{{item.analysis_id}}_{{item.file_area_code}}.png
                         </a>
+
                         </br>
+
+                        Tools:
                         <router-link v-bind:to=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
-                            Segmentation tool
+                            Segment this video
                         </router-link>
+                        |
+                        <router-link v-bind:to=" '/segmentation-list?operator_id='+ item.operator_id +'&patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id">
+                            Show segmentations
+                        </router-link>
+                        |
+                        <router-link v-bind:to=" '/video-upload?operator_id='+ item.operator_id +'&patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id">
+                            Edit data
+                        </router-link>
+
                         </br>
+
+                        APIs:
                         <a v-bind:target=" 'api_' + item.analysis_id + item.file_area_code"
                             v-bind:href=" '/api/videos/' + item.analysis_id + '_' + item.file_area_code ">
-                            Api
+                            Json metadata
                         </a>
+
                     </td>
                     <td>
                         <img v-if="item.depth"

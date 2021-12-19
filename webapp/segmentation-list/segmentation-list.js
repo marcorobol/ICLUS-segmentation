@@ -1,4 +1,83 @@
 
+Vue.component('segment-crop', {
+    data: () => {
+        return {
+            canvas: null,
+            ctx: null,
+            crop: {width:0, height:0, left:0, top:0}
+        }
+    },
+    props: ['imgSrc', 'points'],
+    async mounted () {
+        var canvas = this.canvas = this.$el.querySelector("canvas")
+        // var image = this.image = this.$el.querySelector("img")
+        var ctx = this.ctx = canvas.getContext("2d")
+        var points = this.points
+
+        let min_top = points.map(p => p.y).reduce( (prev,curr) => (curr<prev?curr:prev), 800 )
+        let max_top = points.map(p => p.y).reduce( (prev,curr) => (curr>prev?curr:prev), 0 )
+        let min_left = points.map(p => p.x).reduce( (prev,curr) => (curr<prev?curr:prev), 1068 )
+        let max_left = points.map(p => p.x).reduce( (prev,curr) => (curr>prev?curr:prev), 0 )
+        
+        this.crop.top = min_top
+        this.crop.height = max_top-min_top
+        this.crop.left = min_left
+        this.crop.width = max_left-min_left
+
+        // wait all child components to be rendered
+        await new Promise( (success) => this.$nextTick(success) );
+
+        // ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var image = new Image();
+        image.src = this.imgSrc;
+        await new Promise( (res,rej) => {image.onload = res} )
+
+        const imageBitmap = await createImageBitmap(image);
+        ctx.drawImage(imageBitmap, -this.crop.left, -this.crop.top, 1068, 800)
+        
+        ctx.save();
+        ctx.translate(-this.crop.left, -this.crop.top);
+        ctx.strokeStyle = "#00FF00BB";
+        ctx.fillStyle = '#00FF0022';
+        ctx.beginPath();
+        if (points.length>0) {
+            ctx.moveTo(points[0].x, points[0].y);
+            for (var h = 0; h < points.length-1; h++) {
+                var current = points[h]
+                var next = points[h+1]
+                ctx.lineTo(next.x, next.y);
+            }
+        }
+        ctx.closePath();
+        ctx.stroke(); 
+        ctx.fill();
+        ctx.restore();
+
+    },
+    methods: {
+    },
+    template: `
+        <div>
+            <canvas
+                v-bind:width="crop.width"
+                v-bind:height="crop.height"
+                style="background-color: red; max-height: 100px; max-max-width: 200px"
+            ></canvas>
+        </div>
+    `
+});
+
+
+
+
+
+
+
+
+
+
+
+
 
 globalThis.segmentationList = {
 
@@ -12,14 +91,15 @@ globalThis.segmentationList = {
                 { text: "Area", value: "area_code", options:[], select: [] },
                 { text: "Timestamp", value: "timestamp", options:[], select: [] },
                 { text: "Points", value: "points", options:[], select: [], filterName: "points"  },
-                { text: "Rate", value: "rate", options:[], select: [], filterName: "ratingLabel" }
+                { text: "Rate/label", value: "rate", options:[], select: [], filterName: "ratingLabel" }
             ],
             
             roundDepthBy: "null",
             roundFrequencyBy: "null",
             roundPixelDensityBy: "null",
 
-            videos: []
+            videos: [],
+            query: ""
         }
     },
 
@@ -42,14 +122,19 @@ globalThis.segmentationList = {
         }
         
         // Pull from browser query into filters
+        console.log('pulling from browser queries')
         for (let {value,options,select} of this.headers) {
             
             let queryValues = this.$route.query[value]
             
             for (string of ( queryValues ? ( Array.isArray(queryValues) ? queryValues : [queryValues] ) : [] ) ) {
-                let found = options.find( opt => ''+opt.id == ''+string )
-                if ( found!=undefined && !select.includes(found.id) )
-                    select.push(found.id)
+                // let found = options.find( opt => ''+opt.id == ''+string )
+                // if ( found!=undefined && !select.includes(found.id) )
+                //     select.push(found.id)
+                if(parseInt(string)!=NaN)
+                    select.push(parseInt(string))
+                else
+                    select.push(string)
             }
             
         }
@@ -59,14 +144,17 @@ globalThis.segmentationList = {
 
     filters: {
         ratingLabel: function(id) {
-            const statusMap = {
+            return {
                 0: 'Rated 0',
                 1: 'Rated 1',
                 2: 'Rated 2',
                 3: 'Rated 3',
-                null: 'Not rated'
-            }
-            return statusMap[id]
+                4: 'Consolidation',
+                5: 'Pleural Line',
+                6: 'Pleural Effusion',
+                7: 'Vertical Artifact',
+                null: 'Not labelled'
+            }[id]
         },
         listOfIds: function(list) {
             return (list?list.map( e => (e==null?'null':e) ).join(', '):'')
@@ -133,7 +221,7 @@ globalThis.segmentationList = {
                 for (opt of options) {
                     let s = stats.find( s => s[value] == opt.id )
                     if ( s ) {
-                        opt.counter = s.number_of_files
+                        opt.counter = s.number_of_segmentations
                     }
                     else {
                         opt.counter = 0
@@ -159,7 +247,7 @@ globalThis.segmentationList = {
             // console.log(this.$route.query)
             
 
-            let query = '../api/segmentations?' + queryParams.join("&");
+            let query = this.query = '../api/segmentations?' + queryParams.join("&");
             
             // fetch('../api/videos?where=depth%20IS%20NOT%20NULL')
             fetch(query)
@@ -176,10 +264,12 @@ globalThis.segmentationList = {
 
         callStats: async function (groupBy=[], where=[]) {
   
+            if(groupBy.length==0) return []
+
             let queryParams = []
           
             for (field of groupBy) {
-            //   if(field=="depth" || field=="frequency" || field=="pixel_density" || field=="structure" || field=="rating" || field=="structure")
+                if(field=="points") return []
                 queryParams.push('groupBy='+field)
             }
             for (field of where) {
@@ -200,6 +290,7 @@ globalThis.segmentationList = {
         },
 
         getFilterOfHeader: function (header) {
+            let filter
             if ( filter = this.$options.filters[header.filterName] )
                 return filter
             else // default filter
@@ -212,13 +303,14 @@ globalThis.segmentationList = {
         <v-container fluid>
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
+            <v-btn type="button" :href="query" :download="query" target="_blank">Get JSON data</v-btn>
 
             <template>
             <v-data-table
                 :headers="headers"
                 :items="videos"
                 :items-per-page="5"
-                item-key="file_id"
+                item-key="segmentation_id"
                 class="elevation-1"
                 show-expand
                 multi-sort
@@ -320,7 +412,14 @@ globalThis.segmentationList = {
                 </template>
 
                 <template v-slot:item.points="{ item }">
-                    {{ item.points | points }}
+                    <router-link
+                        v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.area_code +'&step=3' "
+                    >
+                        <segment-crop
+                            v-bind:img-src=" '../png/'+ item.analysis_id +'_'+ item.area_code +'_'+ item.timestamp +'.png'"
+                            v-bind:points="item.points"
+                        ></segment-crop>
+                    </router-link>
                 </template>
 
                 <template v-slot:item.rating_operator="{ item }">
