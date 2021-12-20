@@ -68,7 +68,7 @@ Vue.component('segment-table', {
             segmentId: '',
         }
     },
-    props: ['segmentationTool', 'player'],
+    props: ['segmentationTool', 'player', 'videoCurrentTime'],
     mounted () {
         fetchSegments().then(response => {
             console.log('Segments:', response)
@@ -99,7 +99,7 @@ Vue.component('segment-table', {
                 let s = {
                     'analysis_id': urlParams.analysis_id,
                     'area_code': urlParams.area_code,
-                    'timestamp': this.player.currentTime(), //this.current_video_time, //$('#time')[0].value,
+                    'timestamp': this.videoCurrentTime,//this.player.currentTime(), //this.current_video_time, //$('#time')[0].value,
                     'rate': this.rate,
                     'points': this.segmentationTool.getPoints() //this.$root.$refs.segmentation_tool
                 }
@@ -195,7 +195,8 @@ Vue.component('segment-table', {
                                             {value:4, text:'Consolidation'},
                                             {value:5, text:'Pleural Line'},
                                             {value:6, text:'Pleural Effusion'},
-                                            {value:7, text:'Vertical Artifact'}
+                                            {value:7, text:'Vertical Artifact'},
+                                            {value:8, text:'White Lung'}
                                         ]"
                                         item-value="value"
                                         item-text="text"

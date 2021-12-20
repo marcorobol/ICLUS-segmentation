@@ -1,7 +1,7 @@
 var ffmpeg = require('fluent-ffmpeg');
 var fs = require('fs');
 
-function snapshot(folder, video, snapshot, timemark){
+function snapshot(folder, video, snapshot){
     
   return new Promise( (res,rej) => {
 
@@ -9,47 +9,32 @@ function snapshot(folder, video, snapshot, timemark){
   
     if(!fs.existsSync(folder + video)){
       // console.log('Video does not exists, snapshot aborted')
-      let err = new Error("Video in " + folder + video + " does not exists, snapshot aborted")
-      return rej(err);
+      return rej(false);
     }
 
     ffmpeg(folder + video)
-  
+    
     .on('error', (err) => {
-      console.log(folder + video)
-      return rej(err);
+      rej(err);
     })
     
     .on('end', () => {
       // console.log('Screenshot taken');
       return res(true);
     })
-
-    .on('stderr', function(stderrLine) {
-      console.log('Stderr output: ' + stderrLine);
-    })
     
-    .on('codecData', function(data) {
-      if (timemark >= data.duration)
-        timemark = data.duration-0.04
-    })
-
     .screenshots({
-      timemarks: [timemark], //["00:00:00.100"],
+      timemarks: ["00:00:00.100"],
       folder: folder,
       filename: snapshot, //'%b-at-%s-seconds.png',
     })
     
-    // .output(snapshot)
-    // .noAudio()
-    // .seek(timemark)
-    // .run()
-    
   }).catch( (err) => {
     // console.error('ERROR: Screenshot NOT taken for video ' + video);
-    throw err
   });
   
 }
+
+// snapshot('./unzipped/1246/1428/raw/', 'video_1428_1.avi');
 
 module.exports = snapshot;

@@ -111,11 +111,11 @@ globalThis.segment = {
     methods: {
         changeStep: function (step) {
             console.log("step: " + step)
-            if(step==3) {
-                console.log(this.$refs)
-                this.segmentation_tool = this.$refs["segmentation_tool"]
-                console.log("segmentation_tool: " + this.segmentation_tool)
-            }
+            // if(step==3) {
+            //     console.log(this.$refs)
+            //     this.segmentation_tool = this.$refs["segmentation_tool"]
+            //     console.log("segmentation_tool: " + this.segmentation_tool)
+            // }
         },
         // croppingToolMyEvent: function (bounds) {
         //     this.cropping_bounds = bounds
@@ -453,8 +453,9 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
                                             <segment-table
-                                                v-bind:segmentation-tool="segmentation_tool"
+                                                v-bind:segmentation-tool="$refs.segmentation_tool"
                                                 v-bind:player="player"
+                                                v-bind:video-current-time="video_current_time"
                                             ></segment-table>
                                         </v-card>
                                         

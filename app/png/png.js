@@ -101,7 +101,7 @@ async function getPng(req, res)  {
       return
     }
   } catch(err) {
-    console.error(err)
+    console.log(err)
   }
 
   // Otherwise take new one

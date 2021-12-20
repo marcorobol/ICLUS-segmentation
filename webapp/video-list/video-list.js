@@ -7,7 +7,7 @@ globalThis.videoList = {
     data: () => {
         return {
             headers: [
-                { text: "Operator", value: "operator_id", options:[], select: [1001], filterName: "operatorName" },
+                { text: "Operator", value: "operator_id", options:[], select: [], filterName: "operatorName" },
                 { text: "Patient", value: "patient_id", options:[], select: [] },
                 { text: "Analysis", value: "analysis_id", options:[], select: [] },
                 { text: "Area", value: "file_area_code", options:[], select: [] },
@@ -405,7 +405,7 @@ globalThis.videoList = {
                         </br>
 
                         Tools:
-                        <router-link v-bind:to=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
+                        <router-link v-bind:to=" '/segment?operator_id='+item.operator_id+'&patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code">
                             Segment this video
                         </router-link>
                         |

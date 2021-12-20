@@ -1,4 +1,4 @@
-
+const showWhenCreate = true
 
 globalThis.videoUpload = {
 
@@ -8,44 +8,51 @@ globalThis.videoUpload = {
             dialogDelete: false,
 
             headers: [
-                { text: "Operator", value: "operator_id", options:[], select: 1001, filterName: "operatorName" },
-                { text: "Patient", value: "patient_id", options:[], select: 1020 },
-                { text: "Analysis", value: "analysis_id", options:[], select: 1080 },
-                { text: "Area", value: "file_area_code", options:[], select: null },
-                { text: "Status", value: "analysis_status", options:[], select: null, filterName: "covidStatus", hint:"1:Suspect 2:COVID-19 3:Negative 4post-COVID-19" },
-                { text: "Rating", value: "rating_operator", options:[], select: null, filterName: "ratingLabel" },
+                { text: "Operator", value: "operator_id", options:[], select: 1001, filterName: "operatorName", showWhenCreate },
+                { text: "Patient", value: "patient_id", options:[], select: 1020, showWhenCreate },
+                { text: "Analysis", value: "analysis_id", options:[], select: 1080, showWhenCreate },
+                { text: "Area", value: "file_area_code", options:[], select: null, showWhenCreate },
+                { text: "Patient key", value: "patient_key", options:[], select: null, showWhenCreate },
+                { text: "COVID status", value: "analysis_status", options:[], select: null, showWhenCreate, filterName: "covidStatus", hint:"1:Suspect 2:COVID-19 3:Negative 4post-COVID-19" },
+                { text: "Rating operator", value: "rating_operator", options:[], select: null, showWhenCreate, filterName: "ratingLabel" },
                 { text: "Depth", value: "depth", options:[], select: null },
                 { text: "Frequency", value: "frequency", options:[], select: null },
                 { text: "Focal point", value: "focal_point", options:[], select: null },
                 { text: "Pixel density", value: "pixel_density", options:[], select: null, filterName: "pixelDensity" },
+                { text: "Frames", value: "frames", options:[], select: null },
+                { text: "Profile", value: "profile_label", options:[], select: null },
                 { text: "Scanner", value: "profile_scanner_brand", options:[], select: null },
-                { text: 'Actions', value: 'actions', sortable: false }
+                // { text: 'Actions', value: 'actions', sortable: false }
             ],
 
             videos: [],
 
             editedIndex: -1,
             editedItem: {
-                file_area_code: 0,
-                analysis_status: 0,
-                rating_operator: 0,
-                depth: 0,
-                frequency: 0,
-                focal_point: 0,
-                depth: 0,
-                pixel_density: 0,
-                profile_scanner_brand: 0,
+                operator_id: 1,
+                patient_id: 1,
+                analysis_id: 1,
+                file_area_code: 1,
+                analysis_status: null,
+                rating_operator: null,
+                depth: null,
+                frequency: null,
+                focal_point: null,
+                pixel_density: null,
+                profile_scanner_brand: null,
             },
             defaultItem: {
-                file_area_code: 0,
-                analysis_status: 0,
-                rating_operator: 0,
-                depth: 0,
-                frequency: 0,
-                focal_point: 0,
-                depth: 0,
-                pixel_density: 0,
-                profile_scanner_brand: 0,
+                operator_id: 1,
+                patient_id: 1,
+                analysis_id: 1,
+                file_area_code: 1,
+                analysis_status: null,
+                rating_operator: null,
+                depth: null,
+                frequency: null,
+                focal_point: null,
+                pixel_density: null,
+                profile_scanner_brand: null,
             },
         }
     },
@@ -266,8 +273,10 @@ globalThis.videoUpload = {
                 formData.append('patient_id', this.editedItem.patient_id)
                 formData.append('analysis_id', this.editedItem.analysis_id)
                 formData.append('file_area_code', this.editedItem.file_area_code)
-                formData.append('analysis_status', this.editedItem.analysis_status)
-                formData.append('rating_operator', this.editedItem.rating_operator)
+                if(this.editedItem.analysis_status)
+                    formData.append('analysis_status', this.editedItem.analysis_status)
+                if(this.editedItem.rating_operator)
+                    formData.append('rating_operator', this.editedItem.rating_operator)
                 formData.append('depth', this.editedItem.depth)
                 formData.append('frequency', this.editedItem.frequency)
                 formData.append('focal_point', this.editedItem.focal_point)
@@ -328,7 +337,7 @@ globalThis.videoUpload = {
             
             <template>
             <v-data-table
-                :headers="headers.slice(3,12)"
+                :headers="headers.concat({ text: 'Actions', value: 'actions', sortable: false })"
                 :items="videos"
                 :items-per-page="50"
                 item-key="file_id"
@@ -356,7 +365,7 @@ globalThis.videoUpload = {
                     <v-spacer></v-spacer>
                     <v-dialog
                         v-model="dialog"
-                        max-width="500px"
+                        max-width="800px"
                     >
                         <template v-slot:activator="{ on, attrs }">
                         
@@ -381,23 +390,27 @@ globalThis.videoUpload = {
 
                         <v-card>
                             <v-card-title>
-                                <span class="text-h5">{{ formTitle }}</span>
+                                <span class="text-h5">
+                                    {{ editedIndex === -1 ? 'Upload a new video' : 'Edit existing video' }}
+                                </span>
                             </v-card-title>
 
                             <v-card-text>
                                 <v-container>
                                 <v-row>
                                     <v-col
-                                        v-for="column in headers.slice(3,11)"
+                                        v-for="column in headers"
                                         v-bind:key="column.value"
                                         cols="12"
                                         sm="6"
-                                        md="4"
+                                        md="3"
                                     >
                                         <v-text-field
                                             v-model="editedItem[column.value]"
                                             :label="column.text"
                                             :hint="column.hint"
+                                            :disabled="( editedIndex<=-1 && ['depth','frequency','focal_point','pixel_density','frames','profile_label','profile_scanner_brand'].includes(column.value) )
+                                                    || ( editedIndex>-1 && ['operator_id','patient_id','analysis_id','file_area_code'].includes(column.value) )"
                                         >
                                         </v-text-field>
                                     </v-col>
@@ -498,7 +511,7 @@ globalThis.videoUpload = {
                 </template>
 
                 <template v-slot:expanded-item="{ headers, item }">
-                    <td v-bind:colspan="headers.length-6">
+                    <td v-bind:colspan="headers.length-8">
                         More info about {{ item.analysis_id }}_{{ item.file_area_code }}
                         </br>
                         <a v-bind:target=" 'png_' + item.analysis_id + item.file_area_code"

@@ -3,6 +3,7 @@ var router = express.Router();
 var api_crops = require('./crops');
 var api_approvals = require('./approvals');
 const db = require('../db');
+var videoElaborator = require('../video_elaborator/videoElaborator');
 const multer = require("multer");
 const fs = require('fs');
 
@@ -55,15 +56,16 @@ router.get('/:video_ref', async function(req, res, next) {
 
 router.put('/:video_ref', async function(req, res, next) {
   
-  let query = `UPDATE app_file_flat SET
-    analysis_status='${req.body.analysis_status}',
-    rating_operator='${req.body.rating_operator}',
-    depth='${req.body.depth}',
-    frequency='${req.body.frequency}',
-    focal_point='${req.body.focal_point}',
-    pixel_density='${req.body.pixel_density}'
-  WHERE CONCAT(analysis_id,'_',file_area_code)='${req.params.video_ref}'`;
-  let query_res = await db.query(query)
+  let analysis_status = (req.body.analysis_status=='null'?null:req.body.analysis_status)
+  let rating_operator = (req.body.rating_operator=='null'?null:req.body.rating_operator)
+  let depth = parseFloat(req.body.depth)||null
+  let frequency = parseFloat(req.body.frequency)||null
+  let focal_point = parseFloat(req.body.focal_point)||null
+  let pixel_density = parseFloat(req.body.pixel_density)||null
+
+  let query = `UPDATE app_file_flat SET analysis_status=$1, rating_operator=$2, depth=$3, frequency=$4, focal_point=$5, pixel_density=$6
+  WHERE CONCAT(analysis_id,'_',file_area_code)=$7`;
+  let query_res = await db.query(query, [analysis_status,rating_operator,depth,frequency,focal_point,pixel_density, req.params.video_ref])
   .catch(err => {
     next(err);
   })
@@ -123,16 +125,44 @@ router.post('/', upload.single('file'), async function(req, res, next) {
   let originalFileExtension = file.originalname.split('.').slice(-1)
   let assignedCompletePath = assignedFolder+assignedFileName+'.'+originalFileExtension
   
-  if ( !fs.existsSync(assignedFolder) )
-      fs.mkdirSync(assignedFolder, { recursive: true });
-  if ( !fs.existsSync(assignedCompletePath) ) {
-    fs.copyFile( file.path, assignedCompletePath, ()=>{} );
-  }
 
-  let query = `INSERT INTO app_file_flat (operator_id, patient_id, analysis_id, file_area_code, analysis_status, rating_operator, depth, frequency, focal_point, pixel_density)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`;
-  let query_res = await db.query(query, [body.operator_id, body.patient_id, body.analysis_id, body.file_area_code, body.analysis_status, body.rating_operator, body.depth, body.frequency, body.focal_point, body.pixel_density] ).catch( next)
+
+  if ( !fs.existsSync(assignedFolder) )
+    fs.mkdirSync(assignedFolder, { recursive: true });
+  if ( !fs.existsSync(assignedCompletePath) )
+    fs.copyFileSync( file.path, assignedCompletePath, fs.constants.COPYFILE_EXCL );
   
+
+  
+  let elabData = await videoElaborator(
+    rawFolder = assignedFolder,
+    videoFileName = assignedFileName+'.'+originalFileExtension,
+    'snapshot_'+analysisId+'_'+areaCode+'.png'
+  );
+  console.log(elabData)
+
+  
+  let operator_id = body.operator_id
+  let patient_id = body.patient_id
+  let analysis_id = body.analysis_id
+  let file_area_code = body.file_area_code
+  let analysis_status = (body.analysis_status=='null'?null:body.analysis_status)
+  let rating_operator = (body.rating_operator=='null'?null:body.rating_operator)
+  let depth = parseFloat(elabData.depth.value)||null
+  let frequency = parseFloat(elabData.frequency.value)||null
+  let focal_point = parseFloat(elabData.focalPoint.value)||null
+  let pixel_density = parseFloat(elabData.pixel_density)||null
+  let frames = parseInt(elabData.nb_frames)
+  let patient_key = (body.patient_key=='null'?null:body.patient_key)
+  let profile_label = elabData.profileLabel
+  let profile_scanner_brand = elabData.profileScannerBrand
+  let extra = elabData
+  
+  let query = `INSERT INTO app_file_flat (operator_id, patient_id, analysis_id, file_area_code, analysis_status, rating_operator, depth, frequency, focal_point, pixel_density, frames, patient_key, profile_label, profile_scanner_brand, extra)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`;
+  let query_res = await db.query(query, [operator_id, patient_id, analysis_id, file_area_code, analysis_status, rating_operator, depth, frequency, focal_point, pixel_density, frames, patient_key, profile_label, profile_scanner_brand, JSON.stringify(extra)] ).catch( next)
+  
+  res.json(query_res);
 });
 
 module.exports = router;

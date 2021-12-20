@@ -53,7 +53,8 @@ Vue.component('video-player', {
         return {
 			loadedmetadata: false,
 			// readyState,
-			clickCounter: 0
+			clickCounter: 0,
+			frameTime: 0
         }
     },
 	watch: {
@@ -111,11 +112,8 @@ Vue.component('video-player', {
 			function() {
 				let video = html5_player
 
-				var fixedTimecode = video.currentTime;
-				fixedTimecode = parseFloat(fixedTimecode.toFixed(2));
-
-				var SMPTE_time = secondsToTimecode(video.currentTime, vue_this.FPS);
-				$("#currentTimeCode").html(SMPTE_time);
+				// var fixedTimecode = video.currentTime;
+				// fixedTimecode = parseFloat(fixedTimecode.toFixed(2));
 
 				// var videoInfo = "<b>Video info:</b><br/>";
 				// videoInfo += "currentTime: " + video.currentTime + "<br/>";
@@ -123,7 +121,11 @@ Vue.component('video-player', {
 				// videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
 				// $("#videoInfo").html(videoInfo);
 
-				vue_this.$emit('timeupdate', video.currentTime) // see above on-timeupdate
+				var SMPTE_time = secondsToTimecode(video.currentTime, vue_this.FPS);
+				$("#currentTimeCode").html(SMPTE_time);
+				var frameTime = this.frameTime = timecodeToSeconds(SMPTE_time, vue_this.FPS)
+				
+				vue_this.$emit('timeupdate', frameTime) // see above on-timeupdate
 			},
 			vue_this.FPS
 		);
