@@ -62,10 +62,14 @@ router.put('/:video_ref', async function(req, res, next) {
   let frequency = parseFloat(req.body.frequency)||null
   let focal_point = parseFloat(req.body.focal_point)||null
   let pixel_density = parseFloat(req.body.pixel_density)||null
+  let frames = parseInt(req.body.frames)
+  let patient_key = (req.body.patient_key=='null'?null:req.body.patient_key)
+  let profile_label = req.body.profile_label
+  let profile_scanner_brand = req.body.profile_scanner_brand
 
-  let query = `UPDATE app_file_flat SET analysis_status=$1, rating_operator=$2, depth=$3, frequency=$4, focal_point=$5, pixel_density=$6
-  WHERE CONCAT(analysis_id,'_',file_area_code)=$7`;
-  let query_res = await db.query(query, [analysis_status,rating_operator,depth,frequency,focal_point,pixel_density, req.params.video_ref])
+  let query = `UPDATE app_file_flat SET analysis_status=$1, rating_operator=$2, depth=$3, frequency=$4, focal_point=$5, pixel_density=$6, frames=$7, patient_key=$8, profile_label=$9, profile_scanner_brand=$10
+  WHERE CONCAT(analysis_id,'_',file_area_code)=$11`;
+  let query_res = await db.query(query, [analysis_status,rating_operator,depth,frequency,focal_point,pixel_density,frames,patient_key,profile_label,profile_scanner_brand, req.params.video_ref])
   .catch(err => {
     next(err);
   })

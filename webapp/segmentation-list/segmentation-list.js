@@ -312,7 +312,6 @@ globalThis.segmentationList = {
                 :items-per-page="5"
                 item-key="segmentation_id"
                 class="elevation-1"
-                show-expand
                 multi-sort
                 show-group-by
                 :footer-props="{
@@ -398,19 +397,11 @@ globalThis.segmentationList = {
                 
 
                 <template v-slot:item.analysis_id="{ item }">
-                    <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/' ">
+                    <router-link v-bind:to=" '/video-list?analysis_id='+ item.analysis_id +'&area_code='+ item.area_code ">
                         {{ item.analysis_id }}
-                    </a>
+                    </router-link>
                 </template>
-                <template v-slot:item.file="{ item }">
-                    <a v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'.png' ">
-                        png
-                    </a>
-                    <a v-bind:href=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.area_code " >
-                        Segment
-                    </a>
-                </template>
-
+                
                 <template v-slot:item.points="{ item }">
                     <router-link
                         v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.area_code +'&step=3' "
@@ -424,41 +415,6 @@ globalThis.segmentationList = {
 
                 <template v-slot:item.rating_operator="{ item }">
                     {{ item.rating_operator | ratingLabel }}
-                </template>
-
-                <template v-slot:expanded-item="{ headers, item }">
-                    <td v-bind:colspan="headers.length-4">
-                        More info about {{ item.analysis_id }}_{{ item.area_code }}
-                        </br>
-                        <a v-bind:target=" 'png_' + item.analysis_id + item.area_code"
-                            v-bind:href=" '/unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'.png' ">
-                            Snapshot
-                        </a>
-                        </br>
-                        <router-link v-bind:to=" '/segment?patient_id='+ item.patient_id +'&analysis_id='+ item.analysis_id +'&area_code='+ item.area_code">
-                            Segmentation tool
-                        </router-link>
-                        </br>
-                        <a v-bind:target=" 'api_' + item.analysis_id + item.area_code"
-                            v-bind:href=" '/api/videos/' + item.analysis_id + '_' + item.area_code ">
-                            Api
-                        </a>
-                    </td>
-                    <td>
-                        <img v-if="item.depth"
-                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'_D.png' "
-                        />
-                    </td>
-                    <td>
-                        <img v-if="item.frequency"
-                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'_F.png' "
-                        />
-                    </td>
-                    <td v-bind:colspan="2">
-                        <img v-if="item.focal_point | item.pixel_density"
-                            v-bind:src=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.area_code +'_Fc.png' "
-                        />
-                    </td>
                 </template>
 
             </v-data-table>

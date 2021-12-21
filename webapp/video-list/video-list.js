@@ -247,7 +247,7 @@ globalThis.videoList = {
             <v-data-table
                 :headers="headers"
                 :items="videos"
-                :items-per-page="5"
+                :items-per-page="50"
                 item-key="file_id"
                 class="elevation-1"
                 show-expand

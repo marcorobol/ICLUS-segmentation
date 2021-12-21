@@ -9,7 +9,7 @@ const focalPointElaborator2 = require('./focalPointElaborator2');
 const avi1260_910 = {
     applicable: (image, dimensions) => { return dimensions.width==1260 && dimensions.height==910 },
     label: 'avi1260_910',
-    brand: 'mindray',
+    brand: 'Mindray',
     depthElab: depthElaborator( { area: { width: 1185-1136, height: 250-228, left: 1136, top: 228 } } ),
     freqElab: frequencyElaborator( { area: { width: 1195-1135, height: 224-203, left: 1135, top: 203 } } ),
     focalPointElab: focalPointElaborator2( {top: 170, bottom: 910, arrowLeft: 1065, scaleLeft: 1067} )
@@ -105,6 +105,12 @@ const mp41024 = {
     focalPointElab: focalPointElaborator2( {unit: 'cm', top: 50, bottom: 768, arrowLeft: 1, scaleLeft: 7} ) // focalPointElaborator( { top: 50, bottom: 768, left: 2 } )
 }
 
+const mp4800 = {
+    applicable: (image, dimensions) => { return dimensions.width==800 && dimensions.height==600 },
+    label: 'mp4800',
+    brand: 'PhilipsIU22'
+}
+
 const mpeg480 = {
     applicable: (image, dimensions) => { return dimensions.width==480 },
     label: 'mpeg480',
@@ -148,7 +154,7 @@ const unknowProfile = {
     label: 'unknown',
 }
 
-const profiles = [avi1260_910, avi720_540, avi860_808, avi880_688, avi880_672, avi800_652, avi800_608, avi1068, MOV1920, MOV960, mp41024, mpeg480, mpeg1280pixel255, mpeg1280pixelfalse]
+const profiles = [avi1260_910, avi720_540, avi860_808, avi880_688, avi880_672, avi800_652, avi800_608, avi1068, MOV1920, MOV960, mp41024, mp4800, mpeg480, mpeg1280pixel255, mpeg1280pixelfalse]
 
 
 
@@ -199,6 +205,9 @@ async function detectScannerProfile(image, dimensions) {
 
     else if ( mp41024.applicable(image, dimensions) )
         return mp41024
+
+    else if ( mp4800.applicable(image, dimensions) )
+        return mp4800
 
     else if ( mpeg480.applicable(image, dimensions) )
         return mpeg480

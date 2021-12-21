@@ -34,14 +34,17 @@ globalThis.sankey = {
             fieldOptions: [
                 {value: 'depth', text: 'Depth'},
                 {value: 'frequency', text: 'Frequency'},
+                {value: 'focal_point', text: 'Focal point'},
                 {value: 'pixel_density', text: 'Pixel density'},
+                // {value: 'frames', text: 'Number of frames'},
                 {value: 'structure', text: 'Structure'},
-                {value: 'rating', text: 'Rate by operator'},
-                {value: 'status', text: 'Covid'},
+                {value: 'rating_operator', text: 'Rate by operator'},
+                {value: 'analysis_status', text: 'Covid'},
+                {value: 'profile_label', text: 'Video format'},
                 {value: 'profile_scanner_brand', text: 'Scanner brand'}
             ],
             fields: {
-                fieldA: {label: 'field A', value: 'status'},
+                fieldA: {label: 'field A', value: 'analysis_status'},
                 fieldB: {label: 'field B', value: 'structure'},
                 fieldC: {label: 'field C', value: 'profile_scanner_brand'},
                 fieldD: {label: 'field D', value: 'frequency'},
@@ -257,7 +260,9 @@ globalThis.sankey = {
                 label = this.$options.filters.structureName(value)
             else if (field=='profile_scanner_brand')
                 label = value
-            else if (field=='status')
+            else if (field=='profile_label')
+                label = value
+            else if (field=='analysis_status')
                 label = this.$options.filters.covidStatus(value)
             else if (field=='frequency') {
                 label = value + ' MHz'
@@ -306,7 +311,7 @@ globalThis.sankey = {
                 else if(field=="frequency")
                     queries.push('groupBy=frequency'+this.groupFrequency)
                 // queries.push('groupBy=frequency[2.5][3.5,4.5)[4.5,5.5)[5.5,6.5)[6.5,7.5)[10]')
-                else if(field=="pixel_density" || field=="structure" || field=="rating" || field=="status" || field=="profile_scanner_brand")
+                else if(field=="pixel_density" || field=="structure" || field=="rating_operator" || field=="analysis_status" || field=="profile_scanner_brand")
                     queries.push('groupBy='+field)
                 else
                     queries.push('groupBy='+field)
