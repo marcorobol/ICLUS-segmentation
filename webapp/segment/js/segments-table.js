@@ -1,57 +1,4 @@
 
-Vue.component('segment-table-no', {
-    data: () => {
-        return {segments: []}
-    },
-    mounted () {
-        fetchSegments().then(response => (this.segments = response))
-    },
-    template: `
-        <table>
-            <tr>
-                <th> id </th>
-                <th> timestamp </th>
-                <th> actions </th>
-            </tr>
-            <tr v-for="seg in segments">
-                <segment-row
-                    v-bind:segmentation_id="seg.segmentation_id"
-                    v-bind:analysis_id="seg.analysis_id"
-                    v-bind:area_code="seg.area_code"
-                    v-bind:timestamp="seg.timestamp"
-                    v-bind:points="seg.points" >
-                </segment-row>
-            </tr>
-        </table>
-    `
-})
-
-Vue.component('segment-row', {
-    props: ['segmentation_id', 'analysis_id', 'area_code', 'timestamp', 'points'],
-    methods: {
-        load_seg: function () {
-            segmentationTool.clearPoints();
-            segmentationTool.addPoints(this.points);
-        },
-        delete_seg: function () {
-            deleteSegmentation(this.segmentation_id)
-        }
-    },
-    template: `
-        <td>
-            {{ segmentation_id }}
-        </td>
-        <td>
-            {{ timestamp }}
-        </td>
-        <td>
-            <button type='button' v-on:click="load_seg">Load</button>
-            <button type='button' v-on:click="delete_seg">Delete</button>
-        </td>
-    `
-})
-
-
 
 Vue.component('segment-table', {
     data: () => {
@@ -62,22 +9,36 @@ Vue.component('segment-table', {
               v => !!(v!=null) || 'Rate is required'
             ],
             segments: [],
-            patient_id: urlParams.patient_id,
-            analysis_id: urlParams.analysis_id,
-            area_code: urlParams.area_code,
+            // patient_id: urlParams.patient_id,
+            // analysis_id: urlParams.analysis_id,
+            // area_code: urlParams.area_code,
             segmentId: '',
         }
     },
-    props: ['segmentationTool', 'player', 'videoCurrentTime'],
+    props: ['patient_id', 'analysis_id', 'area_code', 'segmentationTool', 'player', 'videoCurrentTime'],
     mounted () {
-        fetchSegments().then(response => {
+        fetchSegments(this.analysis_id, this.area_code).then(response => {
             console.log('Segments:', response)
             this.segments = response
+            
+            // if(found = this.segments.find( e=>''+e.segmentation_id==pullFromQuery().segment_id) )
+            //     this.load_seg( found )
         })
+    },
+    watch: {
+        $route: {
+            handler: async function(to, from) {
+                // let urlParams = pullFromQuery()
+                // this.load_seg( this.segments.find( e=>''+e.segmentation_id==urlParams.segmentId ) )
+            },
+            // cannot start fromRouteToModel here otherwise I don't know how to wait before start watching the model
+            immediate: false
+        }
     },
     methods: {
         load_seg: function (seg) {
             this.player.currentTime(seg.timestamp) //videojs('my-video').currentTime(seg.timestamp)
+            this.player.pause()
             this.segmentationTool.clearPoints();
             this.segmentationTool.addPoints(seg.points);
             this.rate = seg.rate;
@@ -97,8 +58,8 @@ Vue.component('segment-table', {
         create_seg: async function () {
             if (this.$refs.form.validate()) {
                 let s = {
-                    'analysis_id': urlParams.analysis_id,
-                    'area_code': urlParams.area_code,
+                    'analysis_id': this.analysis_id,
+                    'area_code': this.area_code,
                     'timestamp': this.videoCurrentTime,//this.player.currentTime(), //this.current_video_time, //$('#time')[0].value,
                     'rate': this.rate,
                     'points': this.segmentationTool.getPoints() //this.$root.$refs.segmentation_tool
@@ -114,7 +75,7 @@ Vue.component('segment-table', {
         <v-container fluid>
 
             <query-binder
-                query-field="segmentId"
+                query-field="segment_id"
                 v-model="segmentId"
             ></query-binder>
 

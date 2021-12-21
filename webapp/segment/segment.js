@@ -1,5 +1,4 @@
-var urlParams;
-(window.onpopstate = function () {
+function pullFromQuery() {
     var match,
         pl     = /\+/g,  // Regex for replacing addition symbol with a space
         search = /([^&=]+)=?([^&]*)/g,
@@ -8,10 +7,14 @@ var urlParams;
         if (query=='') // fix to work when mounted under #
             query  = window.location.hash.substring( window.location.hash.indexOf('?') + 1 );
 
-    urlParams = {};
+    let urlParams = {};
     while (match = search.exec(query))
-    urlParams[decode(match[1])] = decode(match[2]);
-})();
+        urlParams[decode(match[1])] = decode(match[2]);
+
+    return urlParams
+};
+// pull when history change... but where to save result??
+// window.onpopstate = pullFromQuery;
 
 
 
@@ -21,9 +24,9 @@ globalThis.segment = {
         return {
             e1: 1,
             segments: 1,
-            patient_id: urlParams.patient_id,
-            analysis_id: urlParams.analysis_id,
-            area_code: urlParams.area_code,
+            patient_id: pullFromQuery().patient_id,
+            analysis_id: pullFromQuery().analysis_id,
+            area_code: pullFromQuery().area_code,
             metadata: [],
             approvals: [],
             video: {},
@@ -46,6 +49,16 @@ globalThis.segment = {
             console.log("videoTrimed at " + val)
             this.player.play()
             this.player.pause()
+        },
+        $route: {
+            handler: async function(to, from) {
+                let urlParams = pullFromQuery()
+                this.patient_id = urlParams.patient_id
+                this.analysis_id = urlParams.analysis_id
+                this.area_code = urlParams.area_code
+            },
+            // cannot start fromRouteToModel here otherwise I don't know how to wait before start watching the model
+            immediate: false
         }
     },
     // created() {
@@ -67,26 +80,17 @@ globalThis.segment = {
 
         let vue_this = this;
 
-        fetchRawMetadata().then( response => {
-            console.log('Raw matadata:', response)
-        })
-        fetchMp4Metadata().then( response => {
-            console.log('Mp4 matadata:', response)
-            this.FPS = Function(`'use strict'; return (${response.r_frame_rate})`)()
-        })
-
         // const statusMap = {
         //     1: 'Suspect',
         //     2: 'Positive',
         //     3: 'Negative',
         //     4: 'Post covid'
         // }
-        fetchMetadata().then( response => {
+        fetchApiVideo(this.analysis_id, this.area_code).then( response => {
             console.log('Matadata:', response)
             this.metadata = response
-            // this.metadata.analysis_status_text = statusMap[this.metadata.analysis_status]
         })
-        fetchApprovals().then( response => {
+        fetchApprovals(this.analysis_id, this.area_code).then( response => {
             console.log('Approvals:', response)
             this.approvals = response
         })
@@ -109,6 +113,18 @@ globalThis.segment = {
         }
     },
     methods: {
+        playerReady: function ($event) {
+            this.player = $event
+            this.video_duration = $event.duration()
+
+            // fetchRawMetadata().then( response => {
+            //     console.log('Raw matadata:', response)
+            // })
+            fetchMp4Metadata(this.patient_id, this.analysis_id, this.area_code).then( response => {
+                console.log('Mp4 matadata:', response)
+                this.FPS = Function(`'use strict'; return (${response.r_frame_rate})`)()
+            })
+        },
         changeStep: function (step) {
             console.log("step: " + step)
             // if(step==3) {
@@ -127,17 +143,28 @@ globalThis.segment = {
             this.metadata.cut_beginning = this.video_trim[0]
             this.metadata.cut_end = this.video_trim[1]
             console.log(this.metadata)
-            await postApproval(this.metadata)
+            await postApproval(this.analysis_id, this.area_code, this.metadata)
             // postVideoTrim(this.video_trim)
-            this.approvals = await fetchApprovals()
+            this.approvals = await fetchApprovals(this.analysis_id, this.area_code)
         },
         confirmCrop: function () {
             console.log("confirmCrop")
-            postCrop({bounds: this.cropping_bounds})
+            postCrop(this.analysis_id, this.area_code, {bounds: this.cropping_bounds})
+        },
+        postCrop: async function (data) {
+            return query_res = await fetch(`../api/videos/${this.analysis_id}_${this.area_code}/crops`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then((resp) => resp.json()) // Transform the data into json
+            .catch( error => console.error(error) ); // If there is any error you will catch them here
         },
         deleteApproval: async function (approval_id) {
             await deleteApproval(approval_id)
-            this.approvals = await fetchApprovals()
+            this.approvals = await fetchApprovals(this.analysis_id, this.area_code)
         }
     },
     template: `
@@ -453,6 +480,9 @@ globalThis.segment = {
                                             class="mb-12"
                                         >
                                             <segment-table
+                                                v-bind:patient_id="patient_id"
+                                                v-bind:analysis_id="analysis_id"
+                                                v-bind:area_code="area_code"
                                                 v-bind:segmentation-tool="$refs.segmentation_tool"
                                                 v-bind:player="player"
                                                 v-bind:video-current-time="video_current_time"
@@ -493,6 +523,9 @@ globalThis.segment = {
                             <cropping-tool
                                 v-show="e1 == 2"
                                 v-on:bounds-update="cropping_bounds = $event"
+                                v-bind:patient_id="patient_id"
+                                v-bind:analysis_id="analysis_id"
+                                v-bind:area_code="area_code"
                             ></cropping-tool>
 
                             <segmentation-tool
@@ -506,7 +539,7 @@ globalThis.segment = {
                                 ref="my_video"
                                 v-bind:FPS="FPS"
                                 v-bind:video_trim="video_trim"
-                                v-on:ready="player = $event; video_duration = $event.duration()"
+                                v-on:ready="playerReady"
                                 v-on:timeupdate="video_current_time = parseFloat($event)"
                             >
                                 <source

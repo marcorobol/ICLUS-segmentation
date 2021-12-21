@@ -404,7 +404,7 @@ globalThis.segmentationList = {
                 
                 <template v-slot:item.points="{ item }">
                     <router-link
-                        v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.area_code +'&step=3' "
+                        v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.area_code +'&segment_id='+ item.segmentation_id +'&step=3' "
                     >
                         <segment-crop
                             v-bind:img-src=" '../png/'+ item.analysis_id +'_'+ item.area_code +'_'+ item.timestamp +'.png'"

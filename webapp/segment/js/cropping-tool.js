@@ -457,9 +457,10 @@ Vue.component('cropping-tool', {
             // x,y,w,h,th,bh,ch : null
         }
     },
+    props: ['patient_id', 'analysis_id', 'area_code'],
     emits: [ 'bounds-update' ],
     async mounted () {
-        var response = await fetchCrops();
+        var response = await fetchCrops(this.analysis_id, this.area_code);
         initialBounds = (response.length>0?response[response.length-1].crop_bounds:{})
         this.selectionBox = SelectionBox( this.$el, (bounds)=>{ this.$emit('bounds-update', bounds) }, initialBounds );
     },
