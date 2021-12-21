@@ -182,27 +182,27 @@ Vue.component('video-player', {
 		onPlay: function() {
 		},
 
-		updateVideoCurrentTimeCode: function() {
+		// updateVideoCurrentTimeCode: function() {
 			
-			let video = this.$el
+		// 	let video = this.$el
 
-			var currentTime = video.currentTime;
-			var fixedTimecode = parseFloat(video.currentTime.toFixed(2));
+		// 	var currentTime = video.currentTime;
+		// 	var fixedTimecode = parseFloat(video.currentTime.toFixed(2));
 
-			var SMPTE_time = secondsToTimecode(video.currentTime, FPS);
-			$("#currentTimeCode").html(SMPTE_time);
+		// 	var SMPTE_time = secondsToTimecode(video.currentTime, FPS);
+		// 	$("#currentTimeCode").html(SMPTE_time);
 
-			var videoInfo = "<b>Video info:</b><br/>";
-			videoInfo += "currentTime: " + currentTime + "<br/>";
-			videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
-			videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
-			$("#videoInfo").html(videoInfo);
+		// 	var videoInfo = "<b>Video info:</b><br/>";
+		// 	videoInfo += "currentTime: " + currentTime + "<br/>";
+		// 	videoInfo += "fixedTimecode: " + fixedTimecode + "<br/>";
+		// 	videoInfo += "srcVideo: " + video.currentSrc + "<br/>";
+		// 	$("#videoInfo").html(videoInfo);
 
-			// UNABLE to see if HTML5 picked the .mp4 / .webm / .ogv version by querying the .src attribute...
-			//var video_src = "<b>video source used:</b><br/>" + video.source.src;
-			//$("#videoSource").html = video_src;
+		// 	// UNABLE to see if HTML5 picked the .mp4 / .webm / .ogv version by querying the .src attribute...
+		// 	//var video_src = "<b>video source used:</b><br/>" + video.source.src;
+		// 	//$("#videoSource").html = video_src;
 			
-		},
+		// },
 
 		seekToTimecode: function(hh_mm_ss_ff, fps) {
 			let video = this

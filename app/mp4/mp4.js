@@ -41,12 +41,15 @@ router.use('/:patientId/:analysisId/:area_code/mp4/metadata', async function(req
   let mp4Path = folder+fileName+'.mp4'
 
   let metadata = await new Promise( (res) => ffmpeg.ffprobe( mp4Path, function(err, metadata) {
+    if(err)
+      console.log(err)
     //console.dir(metadata); // all metadata
     if(metadata && metadata.streams && metadata.streams[0])
         res(metadata.streams[0]);
     else
         res(null)
   }));
+  
   res.json(metadata)
 });
 

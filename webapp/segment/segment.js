@@ -507,7 +507,7 @@ globalThis.segment = {
                                 v-bind:FPS="FPS"
                                 v-bind:video_trim="video_trim"
                                 v-on:ready="player = $event; video_duration = $event.duration()"
-                                v-on:timeupdate="video_current_time = $event"
+                                v-on:timeupdate="video_current_time = parseFloat($event)"
                             >
                                 <source
                                     v-bind:src="'../mp4/'+patient_id+'/'+analysis_id+'/'+area_code+'/video'"
