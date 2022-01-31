@@ -242,10 +242,12 @@ globalThis.videoList = {
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
             <v-btn type="button" :href="query" :download="query" target="_blank">Get JSON data</v-btn>
+            <v-btn type="button" v-on:click="">Download files</v-btn>
+            <v-btn type="button" v-on:click="">Segment one</v-btn>
 
             <template>
             <v-data-table
-                :headers="headers"
+                :headers="headers.concat({ text: 'Actions', value: 'actions', sortable: false, groupable: false })"
                 :items="videos"
                 :items-per-page="50"
                 item-key="file_id"
@@ -266,7 +268,7 @@ globalThis.videoList = {
                     <tr>
                         <td v-for="column in headers" :colspan="1">
                             <v-select
-                                v-if="column.text"
+                                v-if="column.text  && column.value!='actions'"
                                 v-model="column.select"
                                 :items="column.hideEmptyOptions?column.options.filter(o=>o.counter>0||column.select.includes(o.id)):column.options"
                                 item-value="id"

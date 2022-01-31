@@ -5,6 +5,7 @@ const fs = require('fs')
 const hbjs = require('handbrake-js')
 const ffmpeg = require('fluent-ffmpeg')
 const snapshot = require('./snapshot')
+const createCroppingMask = require('./createCroppingMask')
 const db = require('../db');
 
 
@@ -58,37 +59,75 @@ function findFileByString(folder, string) {
 
 router.use('/:imageParams.png', async function(req, res, next) {
   var imageParams = req.params.imageParams.split("_")
-  if(imageParams.length==4) {
-    req.params.patientId = imageParams[0];
-    req.params.analysisId = imageParams[1];
-    req.params.area_code = imageParams[2];
-    req.params.timemark = imageParams[3];
+  if(imageParams[0]=='cropping-mask'){
+    if(imageParams.length==4) {
+      req.patientId = imageParams[1];
+      req.analysisId = imageParams[2];
+      req.area_code = imageParams[3];
+    }
+    else if(imageParams.length==3) {
+      req.analysisId = imageParams[1];
+      req.area_code = imageParams[2];
+      const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+      req.patientId = query_res.rows[0].patient_id
+    }
   }
-  else if(imageParams.length==3) {
-    req.params.analysisId = imageParams[0];
-    req.params.area_code = imageParams[1];
-    req.params.timemark = imageParams[2];
-    const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.params.analysisId]).catch(next)
-    req.params.patientId = query_res.rows[0].patient_id
+  else{
+    if(imageParams.length==4) {
+      req.patientId = imageParams[0];
+      req.analysisId = imageParams[1];
+      req.area_code = imageParams[2];
+      req.timemark = imageParams[3];
+    }
+    else if(imageParams.length==3) {
+      req.analysisId = imageParams[0];
+      req.area_code = imageParams[1];
+      req.timemark = imageParams[2];
+      const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+      req.patientId = query_res.rows[0].patient_id
+    }
   }
-  getPng(req, res)
+  next()
 })
 
-router.use('/:analysisId_:area_code_:timemark.png', async function(req, res, next) {
-  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.params.analysisId]).catch(next)
-  req.params.patientId = query_res.rows[0].patient_id
-  getPng(req, res)
+
+
+router.use('/cropping-mask_*.png', async function(req, res, next) {
+  req.toBeReturned = {}
+  req.toBeReturned.folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
+  req.toBeReturned.file = 'cropping-mask_' + req.analysisId + '_' + req.area_code + '.png'
+  next()
+// }, async function(req, res, next) {
+//   // if file exists send it back
+//   try {
+//     if (fs.existsSync(req.toBeReturned.folder+req.toBeReturned.file)) {
+//       res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+//       return
+//     }
+//   } catch(err) {
+//     console.log(err)
+//   }
+//   // otherwise
+//   next()
+}, async function(req, res, next) {
+  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+  const dimensions = {width: 800, height: 608}//query_res.rows[0].extra.dimensions
+
+  const query_res2 = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [req.analysisId+'_'+req.area_code]).catch(next)
+  const bounds = query_res2.rows[0].crop_bounds
+
+  createCroppingMask(req.toBeReturned.folder, req.toBeReturned.file, {width, height} = dimensions, {x,w,th,y,h,ch,bh} = bounds)
+
+  res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
 })
 
-router.use('/:patient_id/:analysisId/:area_code/:timemark', async function(req, res, next) {
-  getPng(req, res)
-})
 
-async function getPng(req, res)  {
-  let patientId = req.params.patientId;
-  let analysisId = req.params.analysisId;
-  let area_code = req.params.area_code;
-  let timemark = req.params.timemark;
+
+router.use('/*.png', async function(req, res, next) {
+  let patientId = req.patientId;
+  let analysisId = req.analysisId;
+  let area_code = req.area_code;
+  let timemark = req.timemark;
   
   // set-up
   let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
@@ -132,7 +171,7 @@ async function getPng(req, res)  {
   // })
 
 
-};
+});
 
 
 
