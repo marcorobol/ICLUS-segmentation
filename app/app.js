@@ -88,6 +88,14 @@ app.use('/png', png_router);
 
 
 /**
+ * Zip service
+ */
+const zip_router = require('./zip/zip.js');
+app.use('/zip', zip_router);
+
+
+
+/**
  * Webapp
  */
 

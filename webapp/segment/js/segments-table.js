@@ -157,7 +157,8 @@ Vue.component('segment-table', {
                                             {value:5, text:'Pleural Line'},
                                             {value:6, text:'Pleural Effusion'},
                                             {value:7, text:'Vertical Artifact'},
-                                            {value:8, text:'White Lung'}
+                                            {value:8, text:'White Lung'},
+                                            {value:9, text:'Horizontal Artifact'}
                                         ]"
                                         item-value="value"
                                         item-text="text"

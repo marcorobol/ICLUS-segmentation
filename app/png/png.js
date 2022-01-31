@@ -57,38 +57,85 @@ function findFileByString(folder, string) {
 
 
 
-router.use('/:imageParams.png', async function(req, res, next) {
-  var imageParams = req.params.imageParams.split("_")
-  if(imageParams[0]=='cropping-mask'){
-    if(imageParams.length==4) {
-      req.patientId = imageParams[1];
-      req.analysisId = imageParams[2];
-      req.area_code = imageParams[3];
-    }
-    else if(imageParams.length==3) {
-      req.analysisId = imageParams[1];
-      req.area_code = imageParams[2];
-      const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-      req.patientId = query_res.rows[0].patient_id
-    }
-  }
-  else{
-    if(imageParams.length==4) {
-      req.patientId = imageParams[0];
-      req.analysisId = imageParams[1];
-      req.area_code = imageParams[2];
-      req.timemark = imageParams[3];
-    }
-    else if(imageParams.length==3) {
-      req.analysisId = imageParams[0];
-      req.area_code = imageParams[1];
-      req.timemark = imageParams[2];
-      const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-      req.patientId = query_res.rows[0].patient_id
-    }
-  }
+// '/\/cropping-mask_(\d*)_(\d*)\.png/'
+router.use('/cropping-mask_:analysisId(\\d+)_:area_code(\\d+).png', async function(req, res, next) {
+  req.analysisId = req.params.analysisId;
+  req.area_code = req.params.area_code;
+  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+  req.patientId = query_res.rows[0].patient_id
   next()
 })
+
+router.use('/snapshot_:analysisId(\\d+)_:area_code(\\d+)_:timemark.png', async function(req, res, next) {
+  // console.log(req.params)
+  req.analysisId = req.params.analysisId;
+  req.area_code = req.params.area_code;
+  req.timemark = req.params.timemark;
+  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+  req.patientId = query_res.rows[0].patient_id
+  next()
+})
+
+// router.use('/:imageParams.png', async function(req, res, next) {
+//   var imageParams = req.params.imageParams.split("_")
+//   if(imageParams[0]=='cropping-mask'){
+//     if(imageParams.length==3) {
+//       req.analysisId = imageParams[1];
+//       req.area_code = imageParams[2];
+//       const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+//       req.patientId = query_res.rows[0].patient_id
+//     }
+//     // else if(imageParams.length==4) {
+//     //   req.patientId = imageParams[1];
+//     //   req.analysisId = imageParams[2];
+//     //   req.area_code = imageParams[3];
+//     // }
+//   }
+//   else if(imageParams[0]=='snapshot'){
+//     if(imageParams.length==3) {
+//       req.analysisId = imageParams[1];
+//       req.area_code = imageParams[2];
+//       req.timemark = imageParams[3];
+//       const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
+//       req.patientId = query_res.rows[0].patient_id
+//     }
+//     // else if(imageParams.length==4) {
+//     //   req.patientId = imageParams[1];
+//     //   req.analysisId = imageParams[2];
+//     //   req.area_code = imageParams[3];
+//     //   req.timemark = imageParams[4];
+//     // }
+//   }
+//   next()
+// })
+
+
+
+// const sendFileMiddleware = async function(getPath, createNewFile) {
+
+//   return async function(req, res, next) {
+
+//     // get file local path
+//     var path = {folder, file} = await getPath(req, res, next)
+
+//     // if file exists send it back
+//     try {
+//       if (fs.existsSync(folder+file)) {
+//         res.sendFile(file, { root: folder })
+//         return
+//       }
+//     } catch(err) {
+//       console.log(err)
+//     }
+
+//     // otherwise
+//     await createNewFile(req, res, next, path)
+
+//     res.sendFile(file, { root: folder })
+
+//   }
+
+// }
 
 
 
@@ -97,18 +144,18 @@ router.use('/cropping-mask_*.png', async function(req, res, next) {
   req.toBeReturned.folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
   req.toBeReturned.file = 'cropping-mask_' + req.analysisId + '_' + req.area_code + '.png'
   next()
-// }, async function(req, res, next) {
-//   // if file exists send it back
-//   try {
-//     if (fs.existsSync(req.toBeReturned.folder+req.toBeReturned.file)) {
-//       res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
-//       return
-//     }
-//   } catch(err) {
-//     console.log(err)
-//   }
-//   // otherwise
-//   next()
+}, async function(req, res, next) {
+  // if file exists send it back
+  try {
+    if (fs.existsSync(req.toBeReturned.folder+req.toBeReturned.file)) {
+      res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+      return
+    }
+  } catch(err) {
+    console.log(err)
+  }
+  // otherwise
+  next()
 }, async function(req, res, next) {
   const query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [req.analysisId+'_'+req.area_code]).catch(next)
   let row = query_res.rows[0]
@@ -124,7 +171,7 @@ router.use('/cropping-mask_*.png', async function(req, res, next) {
 
 
 
-router.use('/*.png', async function(req, res, next) {
+router.use('/snapshot_*.png', async function(req, res, next) {
   let patientId = req.patientId;
   let analysisId = req.analysisId;
   let area_code = req.area_code;
@@ -132,7 +179,7 @@ router.use('/*.png', async function(req, res, next) {
   
   // set-up
   let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
-  let snapshotName = 'snapshot' + analysisId + '_' + area_code + '_' + timemark + '.png'
+  let snapshotName = 'snapshot_' + analysisId + '_' + area_code + '_' + timemark + '.png'
 
   // if snapshot exists send it back
   try {
