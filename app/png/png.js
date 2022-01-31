@@ -110,8 +110,9 @@ router.use('/cropping-mask_*.png', async function(req, res, next) {
 //   // otherwise
 //   next()
 }, async function(req, res, next) {
-  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-  const dimensions = {width: 800, height: 608}//query_res.rows[0].extra.dimensions
+  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [req.analysisId+'_'+req.area_code]).catch(next)
+  let row = query_res.rows[0]
+  const dimensions = {width: row.extra.resolution.width, height: row.extra.resolution.height}//query_res.rows[0].extra.dimensions
 
   const query_res2 = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [req.analysisId+'_'+req.area_code]).catch(next)
   const bounds = query_res2.rows[0].crop_bounds

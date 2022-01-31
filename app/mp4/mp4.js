@@ -8,7 +8,7 @@ const db = require('../db');
 
 
 //Pre-process path and get valid patientId if missed
-router.use('/:patientId/:analysisId/', async function(req, res, next) {
+router.use('/:patientId/:analysisId/:area_code', async function(req, res, next) {
   
   // patientId
   if(req.params.patientId == undefined || req.params.patientId == 'undefined') {
@@ -24,6 +24,9 @@ router.use('/:patientId/:analysisId/', async function(req, res, next) {
 
   // analysisId
   req.analysisId = req.params.analysisId
+
+  // area_code
+  req.area_code = req.params.area_code
 
   next()
 
@@ -109,10 +112,11 @@ const mp4ConverterHandler = async function(req, res) {
 
 function findFile(folder, fileName) {
   let files = fs.readdirSync(folder);
-    for (var f of files) {
-      if ( f.split('.')[0] == fileName )
-        return f;
-    }
+  for (var f of files) {
+    if ( f.split('.')[0] == fileName )
+      return f;
+  }
+  throw new Error('no file Found for', fileName, 'in folder', folder)
 }
 
 router.get('/:patientId/:analysisId/:area_code/video', mp4ConverterHandler)
@@ -136,6 +140,71 @@ router.get('/convert_all_video', async function(req, res, next) {
   }
   
 });
+
+
+
+const sizeOf = require('image-size');
+router.get('/resolution_all_video', async function(req, res, next) {
+  
+  const query_res = await db.query(`SELECT * FROM app_file_flat`).catch(next)
+  for (row of query_res.rows) {
+    console.log("Resolving ", row.patient_id, row.analysis_id, row.file_area_code)
+    
+    let folder = process.env.UNZIPPED+'/'+row.patient_id+'/'+row.analysis_id+'/raw/'
+    var snapshotPath = folder + 'snapshot_' + row.analysis_id + '_' + row.file_area_code + '.png'
+    
+    let resolution = await new Promise( (res,rej) => {
+      sizeOf(snapshotPath, function (err, resolution) {
+        if (err) rej(err);
+        res(resolution);
+      });
+    })
+    .then( async (resolution) => {
+      row.extra.resolution = resolution
+
+      await db.query(`UPDATE app_file_flat SET extra = $1 WHERE CONCAT(analysis_id,'_',file_area_code)=$2`,
+        [row.extra, row.analysis_id+'_'+row.file_area_code] ).catch(next)
+    })
+    .catch( (err) => {} )
+
+  }
+
+});
+
+
+
+
+
+router.get('/:patientId/:analysisId/:area_code/clipped', async function(req, res, next) {
+  req.toBeReturned = {}
+  req.toBeReturned.folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
+  req.toBeReturned.file = 'clipped_' + req.analysisId + '_' + req.area_code + '.mp4'
+  next()
+}, async function(req, res, next) {
+  // if file exists send it back
+  try {
+    if (fs.existsSync(req.toBeReturned.folder+req.toBeReturned.file)) {
+      res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+      return
+    }
+  } catch(err) {
+    console.log(err)
+  }
+  // otherwise
+  next()
+}, async function(req, res, next) {
+
+  let folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
+  let rawVideo = folder+findFile(folder, 'video_'+req.analysisId+'_'+req.area_code)
+  let clippingMask = folder+'cropping-mask_' + req.analysisId + '_' + req.area_code + '.png'
+
+  const overlayVideos = require('./overlayVideos')
+  await overlayVideos(rawVideo, clippingMask, req.toBeReturned.folder+req.toBeReturned.file)
+
+  res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+});
+
+
 
 
 
