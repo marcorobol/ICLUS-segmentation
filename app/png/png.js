@@ -109,36 +109,46 @@ const sendIfExists = async function(req, res, next) {
 
 
 // '/\/cropping-mask_(\d*)_(\d*)\.png/'
-router.use('/cropping-mask_:analysisId(\\d+)_:areaCode(\\d+).png', async function(req, res, next) {
+router.use('/cropping-mask_:analysisId(\\d+)_:areaCode(\\d+).png', function(req, res, next) {
+  croppingMask(req.params.analysisId, req.params.areaCode)
+  .then( croppingMaskPath => {
+    res.sendFile(path.resolve(croppingMaskPath))
+  })
+  .catch(err=>next(err))
+});
+
+
+
+async function croppingMask(analysisId, areaCode) {
   
-  // analysisId areaCode patientId
-  let analysisId = req.params.analysisId
-  let areaCode = req.params.areaCode
-  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode]).catch(next)
-  let patientId = app_file_flat_query_res.rows[0].patient_id
-  // toBeSent path
-  req.toBeSent = path.join( process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
+  // get patientId
+  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode])
+  if(app_file_flat_query_res.rows.length==0)
+    throw new Error('No entry exists in db.app_file_flat for analysis_id='+analysisId+' AND file_area_code='+areaCode)
+  const patientId = app_file_flat_query_res.rows[0].patient_id
+  
+  // get croppingMaskPath /patientId/analysisId/clipped/cropping-mask_analysisId_areaCode.png
+  var croppingMaskPath = path.join( process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
     `cropping-mask_${analysisId}_${areaCode}.png`
   )
 
-  // send if exists
-  await new Promise( resolve => sendIfExists(req, res, resolve))
+  // check if exists
+  if (fs.existsSync(croppingMaskPath))
+    return croppingMaskPath
   // otherwise create new one
 
   // get resolution
-  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [req.params.analysisId+'_'+req.params.areaCode]).catch(next)
-  let row = query_res.rows[0]
-  const resolution = {width, height} = row.extra.resolution;//query_res.rows[0].extra.resolution
-  console.log(resolution)
-  // get mask bounds
-  const query_res2 = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [req.params.analysisId+'_'+req.params.areaCode]).catch(next)
-  const bounds = query_res2.rows[0].crop_bounds
-  // create mask png
-  createCroppingMask(req.toBeSent, {width, height} = resolution, {x,w,th,y,h,ch,bh} = bounds)
-  // send
-  res.sendFile(req.toBeSent)
+  const resolution = {width, height} = app_file_flat_query_res.rows[0].extra.resolution;//query_res.rows[0].extra.resolution
+  
+  // get bounds
+  const crops_query_res = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [analysisId+'_'+areaCode])
+  const bounds = crops_query_res.rows[0].crop_bounds
 
-});
+  // create mask png
+  createCroppingMask(croppingMaskPath, {width, height} = resolution, {x,w,th,y,h,ch,bh} = bounds)
+  
+  return croppingMaskPath;
+}
 
 
 

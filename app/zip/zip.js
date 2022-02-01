@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express')
 var router = express.Router()
 const fs = require('fs')
+const path = require('path');
 const AdmZip = require("adm-zip");
 const db = require('../db');
 
@@ -54,12 +55,18 @@ function findFileByString(folder, string) {
 
 
 
-router.get('/clipped_:where.zip', async function(req, res, next) { // zip/clipped_where=analysis_id=1%20OR%20analysis_id=1042&where=file_area_code=%271%27.zip
+router.get('/clipped_:where.zip', async function(req, res, next) { 
   console.log(req.path)
   console.log(req.params)
+
+  // zip/clipped_where=analysis_id=1%20OR%20analysis_id=1042&where=file_area_code=%271%27.zip
+  // var whereQueryString = req.params.where;
+  // let whereArray = whereQueryString.split('&').map( s => s.slice(6) )
+  // let whereSql = whereArray.map( w=>'(' + w + ')' ).join(' AND ')
   
+  // zip/clipped_analysis_id=1ORanalysis_id=1042ANDfile_area_code=1.zip
   var whereQueryString = req.params.where;
-  let whereArray = whereQueryString.split('&').map( s => s.slice(6) )
+  let whereArray = whereQueryString.split(' AND ')
   let whereSql = whereArray.map( w=>'(' + w + ')' ).join(' AND ')
   
   let query = `SELECT * FROM app_file_flat ${whereArray.length>0?'WHERE '+whereSql:''}`;
@@ -74,11 +81,15 @@ router.get('/clipped_:where.zip', async function(req, res, next) { // zip/clippe
   for (const row of query_res.rows) {
       var {patient_id, analysis_id} = row;
       const localFolder = process.env.UNZIPPED+'/'+patient_id+'/'+analysis_id+'/raw/'
-      zip.addLocalFolder(localFolder);
+      if (!fs.existsSync(localFolder))
+        fs.mkdirSync(localFolder, {recursive: true})
+      zip.addLocalFolder(localFolder, patient_id+'/'+analysis_id);
   }
 
   zip.writeZip(outputFile);
   console.log(`Created ${outputFile} successfully`);
+
+  res.sendFile(path.resolve(outputFile))
   
 });
 

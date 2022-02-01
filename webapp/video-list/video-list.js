@@ -187,7 +187,7 @@ globalThis.videoList = {
             // console.log(this.$route.query)
             
 
-            let query = this.query = '../api/videos?' + queryParams.join("&");
+            let query = this.query = '/api/videos?' + queryParams.join("&");
             
             // fetch('../api/videos?where=depth%20IS%20NOT%20NULL')
             fetch(query)
@@ -242,7 +242,7 @@ globalThis.videoList = {
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
             <v-btn type="button" :href="query" :download="query" target="_blank">Get JSON data</v-btn>
-            <v-btn type="button" v-on:click="">Download files</v-btn>
+            <v-btn type="button" :href="'/zip/clipped_'+selectedWhereParams(headers).join(' AND ')+'.zip'">Download files</v-btn>
             <v-btn type="button" v-on:click="">Segment one</v-btn>
 
             <template>

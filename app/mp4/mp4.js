@@ -14,8 +14,9 @@ router.use('/:patientId/:analysisId/:area_code', async function(req, res, next) 
   if(req.params.patientId == undefined || req.params.patientId == 'undefined') {
     const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.params.analysisId]).catch(next)
     let patientId = query_res.rows[0].patient_id
-    console.log('redirecting to', req.baseUrl.split('/').slice(0,-2).join('/')+'/'+patientId+'/'+req.params.analysisId+req.url)
-    res.redirect(req.baseUrl.split('/').slice(0,-2).join('/')+'/'+patientId+'/'+req.params.analysisId+req.url)
+    let redirect = req.baseUrl.split('/').slice(0,-3).join('/')+'/'+patientId+'/'+req.params.analysisId+'/'+req.params.area_code+req.url
+    console.log('redirecting to', redirect)
+    res.redirect(redirect)
     return
   }
   else {
