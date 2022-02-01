@@ -2,10 +2,10 @@ require('dotenv').config()
 const express = require('express')
 var router = express.Router()
 const fs = require('fs')
-const hbjs = require('handbrake-js')
-const ffmpeg = require('fluent-ffmpeg')
+const path = require('path');
 const snapshot = require('./snapshot')
 const createCroppingMask = require('./createCroppingMask')
+const createSegmentedSnapshot = require('./createSegmentedSnapshot')
 const db = require('../db');
 
 
@@ -57,57 +57,9 @@ function findFileByString(folder, string) {
 
 
 
-// '/\/cropping-mask_(\d*)_(\d*)\.png/'
-router.use('/cropping-mask_:analysisId(\\d+)_:area_code(\\d+).png', async function(req, res, next) {
-  req.analysisId = req.params.analysisId;
-  req.area_code = req.params.area_code;
-  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-  req.patientId = query_res.rows[0].patient_id
-  next()
-})
 
-router.use('/snapshot_:analysisId(\\d+)_:area_code(\\d+)_:timemark.png', async function(req, res, next) {
-  // console.log(req.params)
-  req.analysisId = req.params.analysisId;
-  req.area_code = req.params.area_code;
-  req.timemark = req.params.timemark;
-  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-  req.patientId = query_res.rows[0].patient_id
-  next()
-})
 
-// router.use('/:imageParams.png', async function(req, res, next) {
-//   var imageParams = req.params.imageParams.split("_")
-//   if(imageParams[0]=='cropping-mask'){
-//     if(imageParams.length==3) {
-//       req.analysisId = imageParams[1];
-//       req.area_code = imageParams[2];
-//       const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-//       req.patientId = query_res.rows[0].patient_id
-//     }
-//     // else if(imageParams.length==4) {
-//     //   req.patientId = imageParams[1];
-//     //   req.analysisId = imageParams[2];
-//     //   req.area_code = imageParams[3];
-//     // }
-//   }
-//   else if(imageParams[0]=='snapshot'){
-//     if(imageParams.length==3) {
-//       req.analysisId = imageParams[1];
-//       req.area_code = imageParams[2];
-//       req.timemark = imageParams[3];
-//       const query_res = await db.query(`SELECT * FROM app_file_flat WHERE analysis_id = $1`, [req.analysisId]).catch(next)
-//       req.patientId = query_res.rows[0].patient_id
-//     }
-//     // else if(imageParams.length==4) {
-//     //   req.patientId = imageParams[1];
-//     //   req.analysisId = imageParams[2];
-//     //   req.area_code = imageParams[3];
-//     //   req.timemark = imageParams[4];
-//     // }
-//   }
-//   next()
-// })
+
 
 
 
@@ -139,67 +91,81 @@ router.use('/snapshot_:analysisId(\\d+)_:area_code(\\d+)_:timemark.png', async f
 
 
 
-router.use('/cropping-mask_*.png', async function(req, res, next) {
-  req.toBeReturned = {}
-  req.toBeReturned.folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
-  req.toBeReturned.file = 'cropping-mask_' + req.analysisId + '_' + req.area_code + '.png'
-  next()
-}, async function(req, res, next) {
+const sendIfExists = async function(req, res, next) {
+  req.toBeSent = path.resolve(req.toBeSent)
   // if file exists send it back
   try {
-    if (fs.existsSync(req.toBeReturned.folder+req.toBeReturned.file)) {
-      res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+    if (fs.existsSync(req.toBeSent)) {
+      res.sendFile(req.toBeSent)
       return
     }
   } catch(err) {
-    console.log(err)
+    next(err)
   }
   // otherwise
   next()
-}, async function(req, res, next) {
-  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [req.analysisId+'_'+req.area_code]).catch(next)
-  let row = query_res.rows[0]
-  const dimensions = {width: row.extra.resolution.width, height: row.extra.resolution.height}//query_res.rows[0].extra.dimensions
-
-  const query_res2 = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [req.analysisId+'_'+req.area_code]).catch(next)
-  const bounds = query_res2.rows[0].crop_bounds
-
-  createCroppingMask(req.toBeReturned.folder, req.toBeReturned.file, {width, height} = dimensions, {x,w,th,y,h,ch,bh} = bounds)
-
-  res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
-})
+}
 
 
 
-router.use('/snapshot_*.png', async function(req, res, next) {
-  let patientId = req.patientId;
-  let analysisId = req.analysisId;
-  let area_code = req.area_code;
-  let timemark = req.timemark;
+// '/\/cropping-mask_(\d*)_(\d*)\.png/'
+router.use('/cropping-mask_:analysisId(\\d+)_:areaCode(\\d+).png', async function(req, res, next) {
   
-  // set-up
-  let folder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
-  let snapshotName = 'snapshot_' + analysisId + '_' + area_code + '_' + timemark + '.png'
+  // analysisId areaCode patientId
+  let analysisId = req.params.analysisId
+  let areaCode = req.params.areaCode
+  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode]).catch(next)
+  let patientId = app_file_flat_query_res.rows[0].patient_id
+  // toBeSent path
+  req.toBeSent = path.join( process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
+    `cropping-mask_${analysisId}_${areaCode}.png`
+  )
 
-  // if snapshot exists send it back
-  try {
-    if (fs.existsSync(folder+snapshotName)) {
-      res.sendFile(snapshotName, { root: folder })
-      return
-    }
-  } catch(err) {
-    console.log(err)
-  }
+  // send if exists
+  await new Promise( resolve => sendIfExists(req, res, resolve))
+  // otherwise create new one
 
+  // get resolution
+  const query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [req.params.analysisId+'_'+req.params.areaCode]).catch(next)
+  let row = query_res.rows[0]
+  const resolution = {width, height} = row.extra.resolution;//query_res.rows[0].extra.resolution
+  console.log(resolution)
+  // get mask bounds
+  const query_res2 = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [req.params.analysisId+'_'+req.params.areaCode]).catch(next)
+  const bounds = query_res2.rows[0].crop_bounds
+  // create mask png
+  createCroppingMask(req.toBeSent, {width, height} = resolution, {x,w,th,y,h,ch,bh} = bounds)
+  // send
+  res.sendFile(req.toBeSent)
+
+});
+
+
+
+router.use('/snapshot_:analysisId(\\d+)_:areaCode(\\d+)_:timemark.png', async function(req, res, next) {
+  // analysisId areaCode timemark patientId
+  const analysisId = req.params.analysisId;
+  const areaCode = req.params.areaCode;
+  const timemark = req.params.timemark;
+  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode]).catch(next)
+  const patientId = app_file_flat_query_res.rows[0].patient_id
+  // toBeSent path
+  req.toBeSent = path.join (process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
+    `snapshot_${analysisId}_${areaCode}_${timemark}.png`
+  )
+  
+  // send if exists
+  await new Promise( resolve => sendIfExists(req, res, resolve))
   // Otherwise take new one
 
   // get fileName
   // let fileName = 'video_'+analysisId+'_'+area_code
   // search for raw video file
-  let searchString = 'video_' + analysisId + '_' + area_code + '.';
-  let videoName = await findFileByString( folder, searchString )
+  let searchInFolder = path.join (process.env.UNZIPPED, String(patientId), String(analysisId), '/raw/')
+  let searchString = 'video_' + analysisId + '_' + areaCode + '.';
+  let videoName = await findFileByString( searchInFolder, searchString )
   if(!videoName)
-    throw new Error('no file found for ' + searchString + ' in ' + folder);
+    throw new Error('no file found for ' + searchString + ' in ' + path.dirname(req.toBeSent));
   
   // get video extension
   let videoExtension = videoName.videoExtension = videoName.split('.')[1];
@@ -207,7 +173,7 @@ router.use('/snapshot_*.png', async function(req, res, next) {
     throw new Error('jpg file found instead of video file');
 
   //take snapshot
-  await snapshot(folder, videoName, snapshotName, timemark)
+  await snapshot(path.join(searchInFolder, videoName), req.toBeSent, timemark)
   .catch( err => {
     console.log(err)
     res.send(err)
@@ -215,9 +181,47 @@ router.use('/snapshot_*.png', async function(req, res, next) {
 
   // respond with snapshot
   // .then( () => {
-    res.sendFile(snapshotName, { root: folder })
+    res.sendFile(req.toBeSent)
   // })
 
+});
+
+
+
+router.use('/segmentation_:segmentationId(\\d+)_snapshot_:analysisId(\\d+)_:areaCode(\\d+)_:timemark.png', async function(req, res, next) {
+  // analysisId areaCode timemark patientId
+  const analysisId = req.params.analysisId;
+  const areaCode = req.params.areaCode;
+  const segmentationId = req.params.segmentationId;
+  const timemark = req.params.timemark;
+  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode]).catch(next)
+  const patientId = app_file_flat_query_res.rows[0].patient_id
+  // toBeSent path
+  req.toBeSent = path.join (process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
+    `segmentation_${segmentationId}_snapshot_${analysisId}_${areaCode}_${timemark}.png`
+  )
+  req.toBeSent = path.resolve(req.toBeSent)
+  
+  // send if exists
+  // await new Promise( resolve => sendIfExists(req, res, resolve))
+  // Otherwise take new one
+
+  // get points
+  const segmentations_query_res = await db.query(`SELECT * FROM segmentations WHERE segmentation_id=$1 AND analysis_id=$2 AND area_code=$3 AND timestamp=$4`, [segmentationId, analysisId, areaCode, timemark]).catch(next)
+  const points = segmentations_query_res.rows[0].points;
+  
+  // srcSnapshotPath
+  var srcSnapshotPath = path.join (process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
+    `snapshot_${analysisId}_${areaCode}_${timemark}.png`
+  )
+
+  // create mask png
+  await createSegmentedSnapshot(srcSnapshotPath, req.toBeSent, points)
+
+  // respond with snapshot
+  // .then( () => {
+    res.sendFile(req.toBeSent)
+  // })
 
 });
 

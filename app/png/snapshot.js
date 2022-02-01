@@ -1,22 +1,23 @@
 var ffmpeg = require('fluent-ffmpeg');
 var fs = require('fs');
+const path = require('path');
 
-function snapshot(folder, video, snapshot, timemark){
+function snapshot(videoSrcPath, snapshotDestPath, timemark){
     
   return new Promise( (res,rej) => {
 
     // console.log(folder, video, snapshot)
   
-    if(!fs.existsSync(folder + video)){
+    if(!fs.existsSync(videoSrcPath)){
       // console.log('Video does not exists, snapshot aborted')
-      let err = new Error("Video in " + folder + video + " does not exists, snapshot aborted")
+      let err = new Error("Video in " + videoSrcPath + " does not exists, snapshot aborted")
       return rej(err);
     }
 
-    ffmpeg(folder + video)
+    ffmpeg(videoSrcPath)
   
     .on('error', (err) => {
-      console.log(folder + video)
+      console.log(videoSrcPath)
       return rej(err);
     })
     
@@ -36,8 +37,8 @@ function snapshot(folder, video, snapshot, timemark){
 
     .screenshots({
       timemarks: [timemark], //["00:00:00.100"],
-      folder: folder,
-      filename: snapshot, //'%b-at-%s-seconds.png',
+      folder: path.dirname(snapshotDestPath),
+      filename: path.basename(snapshotDestPath), //'%b-at-%s-seconds.png',
     })
     
     // .output(snapshot)

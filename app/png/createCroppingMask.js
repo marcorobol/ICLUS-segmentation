@@ -1,9 +1,10 @@
 const fs = require('fs')
+const path = require('path');
 const { createCanvas, loadImage } = require('canvas')
 
 
 
-async function createCroppingMask(folder, file, dimensions = {width, height}, bounds = {x,w,th,y,h,ch,bh})  {
+function createCroppingMask(maskPath, dimensions = {width, height}, bounds = {x,w,th,y,h,ch,bh})  {
   
   var canvas = createCanvas(parseInt(dimensions.width), parseInt(dimensions.height));
   const ctx = canvas.getContext('2d');
@@ -25,8 +26,10 @@ async function createCroppingMask(folder, file, dimensions = {width, height}, bo
   ctx.globalCompositeOperation = "destination-out";  // will "punch-out" background
   ctx.fill();
   ctx.restore();
-  
-  fs.writeFileSync(folder + file, canvas.toBuffer('image/png'));
+
+  if (!fs.existsSync(path.dirname(maskPath)))
+    fs.mkdirSync(path.dirname(maskPath))
+  fs.writeFileSync(maskPath, canvas.toBuffer('image/png'));
   
 };
 
