@@ -398,12 +398,21 @@ globalThis.videoList = {
                         <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/cropped' ">cropped</a>
                         |
                         <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw' ">raw</a>
+                        |
+                        <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/clipped' ">clipped</a>
                         \\
                         <a v-bind:href=" '../unzipped/'+ item.patient_id +'/'+ item.analysis_id +'/raw/snapshot_'+ item.analysis_id +'_'+ item.file_area_code +'.png' "
                            v-bind:target=" 'png_' + item.analysis_id + item.file_area_code ">
                             snapshot_{{item.analysis_id}}_{{item.file_area_code}}.png
                         </a>
-
+                        
+                        </br>
+                        
+                        Png/Mp4:
+                        <a v-bind:href=" '/png/cropping-mask_' + item.analysis_id + '_' + item.file_area_code + '.png' ">Cropping mask</a>
+                        |
+                        <a v-bind:href=" '/mp4/' + item.patient_id + '/' + item.analysis_id + '/' + item.file_area_code + '/clipped' ">Clipped video</a>
+                        
                         </br>
 
                         Tools:

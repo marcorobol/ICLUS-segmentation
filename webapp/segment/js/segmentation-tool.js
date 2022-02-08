@@ -5,7 +5,7 @@ var Handle = function (x, y, active=true) {
     this.active = active;
 }
 
-var SelectionFigure = function () {
+var SegmentFigure = function () {
 
     const handles = [];
 
@@ -65,7 +65,6 @@ var SelectionFigure = function () {
 Vue.component('segmentation-tool', {
     data: () => {
         return {
-            canvas: null,
             ctx: null,
             selection: null,
             drag: false,
@@ -73,10 +72,10 @@ Vue.component('segmentation-tool', {
             croppingPath: new Path2D()
         }
     },
-    props: ['croppingBounds'],
+    props: ['croppingBounds', 'width', 'height'],
     watch: { 
         croppingBounds: function(croppingBounds, oldCroppingBounds) { // watch it
-            // console.log(croppingBounds)
+            // console.log('croppingBounds', croppingBounds)
             
             let b = croppingBounds
             this.croppingPath = new Path2D();
@@ -90,9 +89,9 @@ Vue.component('segmentation-tool', {
     },
     emits: [ 'update' ],
     mounted () {
-        canvas = this.canvas = this.$el.querySelector("canvas");
-        this.ctx = this.canvas.getContext("2d");
-        this.selection = new SelectionFigure();
+        var canvas = this.$el.querySelector("canvas");
+        this.ctx = canvas.getContext("2d");
+        this.selection = new SegmentFigure();
 
         // canvas.addEventListener('mousedown', this.mouseDown, false);
         document.addEventListener('mousemove', this.mouseMove, false);
@@ -102,20 +101,21 @@ Vue.component('segmentation-tool', {
     },
     methods: {
         inCanvas: function (x, y) {
-            if (x<=0 || y<=0 || x>=this.canvas.width || y>=this.canvas.height )
+            if (x<=0 || y<=0 || x>=this.width || y>=this.height )
                 return false
             else
                 return true
         },
         mouseDown: function (e) {
-            var pos = this.getCanvasRelativePosition(e.clientX,e.clientY)
+            var pos = this.getCanvasRelativePosition(e)
 
             if (this.inCanvas(pos.x, pos.y) && this.currentHandle!=null) {
                 this.drag = true;
             }
         },
         mouseMove: function (e) {
-            var pos = this.getCanvasRelativePosition(e.clientX,e.clientY)
+            var pos = this.getCanvasRelativePosition(e)
+            // console.log(pos)
 
             if (this.drag) {
                 if (this.ctx.isPointInPath(this.croppingPath, pos.x, pos.y)) {
@@ -142,7 +142,7 @@ Vue.component('segmentation-tool', {
             this.draw();
         },
         mouseUp: function (e) {
-            pos = this.getCanvasRelativePosition(e.clientX,e.clientY);
+            pos = this.getCanvasRelativePosition(e);
             if (this.drag) {
                 this.drag = false;
             }
@@ -151,20 +151,18 @@ Vue.component('segmentation-tool', {
                 this.$emit('update', this.getPoints())
             }
         },
-        getCanvasRelativePosition: function (x, y) {
-            // console.log(x)
-            const canvasWrapper = this.$el;
-            var wrapperBounds = canvasWrapper.getBoundingClientRect();
-            var canvasBounds = this.canvas.getBoundingClientRect();
-            // console.log(canvasBounds.left)
-            var x = this.canvas.width / wrapperBounds.width * (x - canvasBounds.left) ;
-            var y = this.canvas.height / wrapperBounds.height * (y - canvasBounds.top) ;
-            var w = this.canvas.width;
-            var h = this.canvas.height;
+        getCanvasRelativePosition: function (evt) {
+            var canvas = this.$el.querySelector("canvas");
+            var canvasBounds = canvas.getBoundingClientRect();
+                        
+            var x = (evt.clientX - canvasBounds.left) * this.width / canvasBounds.width; // mousepos * videoWidth / 880
+            var y = (evt.clientY - canvasBounds.top) * this.height / canvasBounds.height; // mousepos * videoHeight / 645
+            
             if (x < 0) x = 0;
             if (y < 0) y = 0;
-            if (x > w) x = w;
-            if (y > h) y = h;
+            if (x > this.width) x = this.width;
+            if (y > this.height) y = this.height;
+
             return {x, y};
         },
         getPoints: function () {
@@ -182,15 +180,16 @@ Vue.component('segmentation-tool', {
             }
         },
         draw: function (e) {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.clearRect(0, 0, this.width, this.height);
             this.ctx.strokeStyle = "red";
-            this.ctx.stroke(this.croppingPath)
             this.selection.draw(this.ctx);
+            this.ctx.stroke(this.croppingPath)
         }
     },
+    // fixed canvas was 1068x800
     template: `
         <div class="positioner" style="z-index: 2; position: absolute; top: 0px;">
-            <canvas @mousedown="mouseDown" @mouseup="mouseUp" width="1068" height="800"></canvas>
+            <canvas @mousedown="mouseDown" @mouseup="mouseUp" :width="width" :height="height"></canvas>
         </div>
     `
 });

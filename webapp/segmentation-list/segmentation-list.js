@@ -153,6 +153,8 @@ globalThis.segmentationList = {
                 5: 'Pleural Line',
                 6: 'Pleural Effusion',
                 7: 'Vertical Artifact',
+                8: 'White Lung',
+                9: 'Horizontal Artifact',
                 null: 'Not labelled'
             }[id]
         },
@@ -413,8 +415,8 @@ globalThis.segmentationList = {
                     </router-link>
                 </template>
 
-                <template v-slot:item.rating_operator="{ item }">
-                    {{ item.rating_operator | ratingLabel }}
+                <template v-slot:item.rate="{ item }">
+                    {{ item.rate | ratingLabel }}
                 </template>
 
             </v-data-table>

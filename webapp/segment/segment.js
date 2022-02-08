@@ -27,7 +27,10 @@ globalThis.segment = {
             patient_id: pullFromQuery().patient_id,
             analysis_id: pullFromQuery().analysis_id,
             area_code: pullFromQuery().area_code,
-            metadata: [],
+            metadata: {extra: {resolution: {}}},
+            original_resolution: null,
+            width: 1068,
+            height: 800,
             approvals: [],
             video: {},
             FPS: null,
@@ -89,6 +92,9 @@ globalThis.segment = {
         fetchApiVideo(this.analysis_id, this.area_code).then( response => {
             console.log('Matadata:', response)
             this.metadata = response
+            this.original_resolution = {width: this.metadata.extra.resolution.width, height: this.metadata.extra.resolution.height}
+            this.width = this.metadata.extra.resolution.width
+            this.height = this.metadata.extra.resolution.height
         })
         fetchApprovals(this.analysis_id, this.area_code).then( response => {
             console.log('Approvals:', response)
@@ -526,12 +532,16 @@ globalThis.segment = {
                                 v-bind:patient_id="patient_id"
                                 v-bind:analysis_id="analysis_id"
                                 v-bind:area_code="area_code"
+                                v-bind:width="width"
+                                v-bind:height="height"
                             ></cropping-tool>
 
                             <segmentation-tool
                                 v-show="e1 == 3"
                                 ref="segmentation_tool"
                                 v-bind:cropping-bounds="cropping_bounds"
+                                v-bind:width="width"
+                                v-bind:height="height"
                             ></segmentation-tool>
 
                             <video-player
