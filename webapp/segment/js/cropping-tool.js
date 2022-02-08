@@ -186,39 +186,22 @@ Vue.component('cropping-tool', {
         }
     },
     props: ['patient_id', 'analysis_id', 'area_code', 'width', 'height'],
-    watch: {},
+    watch: {
+        bounds: {
+            deep: true,
+            handler: function (_new,_old) { console.log('bounds update', _new); this.$emit('bounds-update', _new) }
+        }
+    },
     emits: [ 'bounds-update' ],
     async mounted () {
         
-        var wrapper = this.$el
-        var canvas = wrapper.querySelector('canvas')
-        var ctx = this.ctx = canvas.getContext("2d");
+        var canvas = this.$el.querySelector('canvas')
+        this.ctx = canvas.getContext("2d");
 
-        // initial
-        var bounds = this.bounds = {
-            x : this.width*0.1,
-            y : this.height*0.1,
-            w : this.width-(this.width*0.2),
-            h : this.height-(this.height*0.2),
-            th: 0.35,
-            bh: 0.80,
-            ch: 0.10,
-        }
-        // existing
-        let response = await fetchCrops(this.analysis_id, this.area_code);
-        Object.assign(bounds, (response.length>0 ? response[response.length-1].crop_bounds : {}));
-        // oversized
-        bounds.w = clamp(bounds.w, 0, this.width - bounds.x - 5);
-        bounds.h = clamp(bounds.h, 0, this.height - bounds.y - 5);
-        // emits
-        this.$emit('bounds-update', bounds)
-                
-        this.movingBounds = Object.assign({}, bounds);
-        
+        this.initializeBounds()
+
         this.handles = croppingMaskHandles(this)
         
-
-
         // mouse down move up
         {
             let drag = false;
@@ -259,7 +242,6 @@ Vue.component('cropping-tool', {
                 initalMousePos=null;
                 drag = false;
                 Object.assign(this.bounds, this.movingBounds);
-                this.$emit('bounds-update', this.bounds) //atEndMove(this.bounds)
             }
 
             canvas.addEventListener('mousedown', mouseDown, false);
@@ -332,15 +314,10 @@ Vue.component('cropping-tool', {
                 }
             }
             return null;
-        }
-    },
-    async updated () {
-        this.$nextTick(async function () {
-            // Code that will run only after the
-            // entire view has been re-rendered
-            
+        },
+        initializeBounds: async function() {
             // reset initial bounds
-            this.bounds = {
+            Object.assign(this.bounds, {
                 x : this.width*0.1,
                 y : this.height*0.1,
                 w : this.width-(this.width*0.2),
@@ -348,15 +325,25 @@ Vue.component('cropping-tool', {
                 th: 0.35,
                 bh: 0.80,
                 ch: 0.10,
-            }
-
+            })
             // fetch existing bounds
             let response = await fetchCrops(this.analysis_id, this.area_code);
             let existingBounds = (response.length>0 ? response[response.length-1].crop_bounds : {})
             Object.assign(this.bounds, existingBounds);
             Object.assign(this.movingBounds, this.bounds);
-            
+            // oversized
+            this.bounds.w = clamp(this.bounds.w, 0, this.width - this.bounds.x - 5);
+            this.bounds.h = clamp(this.bounds.h, 0, this.height - this.bounds.y - 5);
+            // redraw
             this.draw()
+        }
+    },
+    updated () {
+        this.$nextTick(function () {
+            console.log('cropping-tool.updated.$nextTick')
+            // Code that will run only after the
+            // entire view has been re-rendered
+            this.initializeBounds()
         })
     },
     template: `

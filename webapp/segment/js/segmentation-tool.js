@@ -74,18 +74,20 @@ Vue.component('segmentation-tool', {
     },
     props: ['croppingBounds', 'width', 'height'],
     watch: { 
-        croppingBounds: function(croppingBounds, oldCroppingBounds) { // watch it
-            // console.log('croppingBounds', croppingBounds)
-            
-            let b = croppingBounds
-            this.croppingPath = new Path2D();
-            this.croppingPath.moveTo(b.x+(b.w*b.th), b.y); // top left
-            this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+(b.h*b.ch*2), b.x+b.w-(b.w*b.th), b.y) // center top -> top right
-            // ctx.lineTo(b.x+b.w-(b.w*b.th), b.y); // top right
-            this.croppingPath.lineTo(b.x+b.w, b.y+(b.h*b.bh)); // bottom right
-            this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+b.h+(b.h-(b.h*b.bh)), b.x, b.y+(b.h*b.bh)) // bottom left
-            this.croppingPath.closePath();
-      }
+        croppingBounds: {
+            deep: true,
+            handler: function (b) {
+                this.croppingPath = new Path2D();
+                this.croppingPath.moveTo(b.x+(b.w*b.th), b.y); // top left
+                this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+(b.h*b.ch*2), b.x+b.w-(b.w*b.th), b.y) // center top -> top right
+                // ctx.lineTo(b.x+b.w-(b.w*b.th), b.y); // top right
+                this.croppingPath.lineTo(b.x+b.w, b.y+(b.h*b.bh)); // bottom right
+                this.croppingPath.quadraticCurveTo(b.x+(b.w/2), b.y+b.h+(b.h-(b.h*b.bh)), b.x, b.y+(b.h*b.bh)) // bottom left
+                this.croppingPath.closePath();
+
+                this.draw()
+            }
+        }
     },
     emits: [ 'update' ],
     mounted () {
@@ -93,8 +95,8 @@ Vue.component('segmentation-tool', {
         this.ctx = canvas.getContext("2d");
         this.selection = new SegmentFigure();
 
-        // canvas.addEventListener('mousedown', this.mouseDown, false);
         document.addEventListener('mousemove', this.mouseMove, false);
+        // canvas.addEventListener('mousedown', this.mouseDown, false);
         // document.addEventListener('mouseup', this.mouseUp, false);
 
         this.draw();
@@ -179,12 +181,19 @@ Vue.component('segmentation-tool', {
                 this.selection.handles.push( new Handle(p.x, p.y) )
             }
         },
-        draw: function (e) {
+        draw: function () {
             this.ctx.clearRect(0, 0, this.width, this.height);
             this.ctx.strokeStyle = "red";
-            this.selection.draw(this.ctx);
             this.ctx.stroke(this.croppingPath)
+            this.selection.draw(this.ctx);
         }
+    },
+    async updated () {
+        this.$nextTick(async function () {
+            // Code that will run only after the
+            // entire view has been re-rendered
+            this.draw()
+        })
     },
     // fixed canvas was 1068x800
     template: `
