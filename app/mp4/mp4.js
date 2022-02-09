@@ -5,6 +5,8 @@ const fs = require('fs')
 const hbjs = require('handbrake-js')
 const ffmpeg = require('fluent-ffmpeg')
 const db = require('../db');
+const paths = require('../paths/paths');
+const overlayVideos = require('./overlayVideos')
 
 
 //Pre-process path and get valid patientId if missed
@@ -177,15 +179,13 @@ router.get('/resolution_all_video', async function(req, res, next) {
 
 
 router.get('/:patientId/:analysisId/:area_code/clipped', async function(req, res, next) {
-  req.toBeReturned = {}
-  req.toBeReturned.folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
-  req.toBeReturned.file = 'clipped_' + req.analysisId + '_' + req.area_code + '.mp4'
+  req.toBeSent = paths.clippedVideo(req.patientId, req.analysisId, req.area_code)
   next()
 }, async function(req, res, next) {
   // if file exists send it back
   try {
-    if (fs.existsSync(req.toBeReturned.folder+req.toBeReturned.file)) {
-      res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+    if (fs.existsSync(req.toBeSent)) {
+      res.sendFile(req.toBeSent)
       return
     }
   } catch(err) {
@@ -195,14 +195,14 @@ router.get('/:patientId/:analysisId/:area_code/clipped', async function(req, res
   next()
 }, async function(req, res, next) {
 
-  let folder = process.env.UNZIPPED+'/'+req.patientId+'/'+req.analysisId+'/raw/'
-  let rawVideo = folder+findFile(folder, 'video_'+req.analysisId+'_'+req.area_code)
-  let clippingMask = folder+'cropping-mask_' + req.analysisId + '_' + req.area_code + '.png'
+  // paths
+  let croppingMaskPath = paths.croppingMask(req.patientId, req.analysisId, req.area_code)
+  let rawVideoPath = paths.rawVideo(req.patientId, req.analysisId, req.area_code)
+  let clippedVideoPath = paths.clippedVideo(req.patientId, req.analysisId, req.area_code)
 
-  const overlayVideos = require('./overlayVideos')
-  await overlayVideos(rawVideo, clippingMask, req.toBeReturned.folder+req.toBeReturned.file)
-
-  res.sendFile(req.toBeReturned.file, { root: req.toBeReturned.folder })
+  await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath)
+  
+  res.sendFile(clippedVideoPath)
 });
 
 

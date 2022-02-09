@@ -13,8 +13,8 @@ function createCroppingMask(maskPath, dimensions = {width, height}, bounds = {x,
   ctx.save();
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // ctx.scale(dimensions.width/1068, dimensions.width/1068); //dimensions.height/800);
   // Draw cropping mask transparent
-  ctx.scale(dimensions.width/1068, dimensions.width/1068); //dimensions.height/800);
   // ctx.fillStyle = 'black';
   ctx.beginPath();
   ctx.moveTo(bounds.x+(bounds.w*bounds.th), bounds.y); // top left

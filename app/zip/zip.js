@@ -80,9 +80,15 @@ router.get('/clipped_:where.zip', async function(req, res, next) {
 
   for (const row of query_res.rows) {
       var {patient_id, analysis_id} = row;
-      const localFolder = process.env.UNZIPPED+'/'+patient_id+'/'+analysis_id+'/raw/'
+      const localFolder = process.env.UNZIPPED+'/'+patient_id+'/'+analysis_id+'/clipped/'
       if (!fs.existsSync(localFolder))
         fs.mkdirSync(localFolder, {recursive: true})
+        
+      let metadataJsonPath = process.env.UNZIPPED+'/'+patient_id+'/'+analysis_id+'/clipped/metadata.json'
+      if (!fs.existsSync(metadataJsonPath)) {
+        fs.writeFileSync(metadataJsonPath, JSON.stringify(row))
+      }
+
       zip.addLocalFolder(localFolder, patient_id+'/'+analysis_id);
   }
 

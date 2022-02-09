@@ -7,6 +7,7 @@ const snapshot = require('./snapshot')
 const createCroppingMask = require('./createCroppingMask')
 const createSegmentedSnapshot = require('./createSegmentedSnapshot')
 const db = require('../db');
+const paths = require('../paths/paths');
 
 
 
@@ -121,31 +122,27 @@ router.use('/cropping-mask_:analysisId(\\d+)_:areaCode(\\d+).png', function(req,
 
 async function croppingMask(analysisId, areaCode) {
   
+  // select file
+  let entry = await db.select_file(analysisId, areaCode)
   // get patientId
-  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode])
-  if(app_file_flat_query_res.rows.length==0)
-    throw new Error('No entry exists in db.app_file_flat for analysis_id='+analysisId+' AND file_area_code='+areaCode)
-  const patientId = app_file_flat_query_res.rows[0].patient_id
+  var patientId = entry.patient_id
+  // get resolution
+  var {width, height} = entry.extra.resolution;
   
-  // get croppingMaskPath /patientId/analysisId/clipped/cropping-mask_analysisId_areaCode.png
-  var croppingMaskPath = path.join( process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
-    `cropping-mask_${analysisId}_${areaCode}.png`
-  )
+  // path
+  let croppingMaskPath = paths.croppingMask(patientId, analysisId, areaCode)
 
   // check if exists
   if (fs.existsSync(croppingMaskPath))
     return croppingMaskPath
   // otherwise create new one
 
-  // get resolution
-  const resolution = {width, height} = app_file_flat_query_res.rows[0].extra.resolution;//query_res.rows[0].extra.resolution
-  
   // get bounds
   const crops_query_res = await db.query(`SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)=$1`, [analysisId+'_'+areaCode])
-  const bounds = crops_query_res.rows[0].crop_bounds
+  const bounds = crops_query_res.rows[crops_query_res.rows.length-1].crop_bounds
 
   // create mask png
-  createCroppingMask(croppingMaskPath, {width, height} = resolution, {x,w,th,y,h,ch,bh} = bounds)
+  createCroppingMask(croppingMaskPath, {width, height}, {x,w,th,y,h,ch,bh} = bounds)
   
   return croppingMaskPath;
 }
@@ -199,39 +196,66 @@ router.use('/snapshot_:analysisId(\\d+)_:areaCode(\\d+)_:timemark.png', async fu
 
 
 router.use('/segmentation_:segmentationId(\\d+)_snapshot_:analysisId(\\d+)_:areaCode(\\d+)_:timemark.png', async function(req, res, next) {
-  // analysisId areaCode timemark patientId
-  const analysisId = req.params.analysisId;
-  const areaCode = req.params.areaCode;
-  const segmentationId = req.params.segmentationId;
+  const analysis_id = req.params.analysisId;
+  const area_code = req.params.areaCode;
+  const segmentation_id = req.params.segmentationId;
   const timemark = req.params.timemark;
-  const app_file_flat_query_res = await db.query(`SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)=$1`, [analysisId+'_'+areaCode]).catch(next)
-  const patientId = app_file_flat_query_res.rows[0].patient_id
-  // toBeSent path
-  req.toBeSent = path.join (process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
-    `segmentation_${segmentationId}_snapshot_${analysisId}_${areaCode}_${timemark}.png`
-  )
-  req.toBeSent = path.resolve(req.toBeSent)
-  
-  // send if exists
-  // await new Promise( resolve => sendIfExists(req, res, resolve))
-  // Otherwise take new one
 
-  // get points
-  const segmentations_query_res = await db.query(`SELECT * FROM segmentations WHERE segmentation_id=$1 AND analysis_id=$2 AND area_code=$3 AND timestamp=$4`, [segmentationId, analysisId, areaCode, timemark]).catch(next)
-  const points = segmentations_query_res.rows[0].points;
-  
-  // srcSnapshotPath
-  var srcSnapshotPath = path.join (process.env.UNZIPPED, String(patientId), String(analysisId), '/clipped/',
-    `snapshot_${analysisId}_${areaCode}_${timemark}.png`
-  )
+  // SELECT FROM app_file_flat
+  let entry = await db.select_file(analysis_id, area_code)
+  const patient_id = entry.patient_id
 
-  // create mask png
-  await createSegmentedSnapshot(srcSnapshotPath, req.toBeSent, points)
+  // SELECT FROM segmentations
+  let segmentations_query_res = await db.query(`SELECT * FROM segmentations WHERE segmentation_id=$1 AND analysis_id=$2 AND area_code=$3 AND timestamp=$4`,
+    [segmentation_id, analysis_id, area_code, timemark])
+  .catch(next)
+  const segmentation = segmentations_query_res.rows[0]
+  const points = segmentation.points
+  const rate = segmentation.rate
+
+  // paths
+  let snapshotPath = paths.snapshot(patient_id, analysis_id, area_code, timemark)
+  let segmentationPath = paths.segmentation(patient_id, analysis_id, area_code, timemark, segmentation_id, rate)
+
+  // create if not exists
+  if (!fs.existsSync(segmentationPath)) {
+    // create mask png
+    await createSegmentedSnapshot(snapshotPath, segmentationPath, points)
+  }
 
   // respond with snapshot
-  // .then( () => {
-    res.sendFile(req.toBeSent)
-  // })
+  res.sendFile(segmentationPath)
+
+});
+
+router.use('/segmentation_:segmentationId(\\d+).png', async function(req, res, next) {
+  const segmentation_id = req.params.segmentationId;
+
+  // SELECT FROM segmentations
+  var segmentation_query_res = await db.query(`SELECT * FROM segmentations WHERE segmentation_id=$1`, [segmentation_id]).catch(next)
+  const segmentation = segmentation_query_res.rows[0]
+  const analysis_id = segmentation.analysis_id
+  const area_code = segmentation.area_code
+  const timemark = segmentation.timestamp
+  const points = segmentation.points
+  const rate = segmentation.rate
+
+  // SELECT FROM app_file_flat
+  let file = await db.select_file(analysis_id, area_code)
+  const patient_id = file.patient_id
+
+  // paths
+  let snapshotPath = paths.snapshot(patient_id, analysis_id, area_code, timemark)
+  let segmentationPath = paths.segmentation(patient_id, analysis_id, area_code, timemark, segmentation_id, rate)
+
+  // create if not exists
+  if (!fs.existsSync(segmentationPath)) {
+    // create mask png
+    await createSegmentedSnapshot(snapshotPath, segmentationPath, points)
+  }
+  
+  // respond with snapshot
+  res.sendFile(segmentationPath)
 
 });
 

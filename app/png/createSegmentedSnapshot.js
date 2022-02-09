@@ -16,7 +16,7 @@ async function createSegmentedSnapshot(srcSnapshotPath, destSegmentedPath, point
   ctx.drawImage(img, 0, 0);
   ctx.fillStyle = "black";
   
-  ctx.scale(img.width/1068, img.height/800); //img.height/800);
+  // ctx.scale(img.width/1068, img.height/800); //img.height/800);
   ctx.beginPath();
   if (points.length>0) {
       ctx.moveTo(points[0].x, points[0].y);
