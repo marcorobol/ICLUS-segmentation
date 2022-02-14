@@ -19,7 +19,7 @@ router.get('/', async function(req, res, next) { //?where=depth%20IS%20NOT%20NUL
   
   let whereString = where.map( w=>'(' + w + ')' ).join(' AND ')
   
-  let query = `SELECT * FROM app_file_flat ${where.length>0?'WHERE '+whereString:''}`;
+  let query = `SELECT * FROM files_segmentations ${where.length>0?'WHERE '+whereString:''}`;
   const query_res = await db.query(query)
   .catch(err => {
     next(err);
@@ -45,7 +45,7 @@ router.use('/:video_ref/approvals', api_approvals);
 
 router.get('/:video_ref', async function(req, res, next) {
   
-  let query = `SELECT * FROM app_file_flat WHERE CONCAT(analysis_id,'_',file_area_code)='${req.params.video_ref}'`
+  let query = `SELECT * FROM files_segmentations WHERE CONCAT(analysis_id,'_',file_area_code)='${req.params.video_ref}'`
   let query_res = await db.query(query)
   .catch(err => {
     next(err);

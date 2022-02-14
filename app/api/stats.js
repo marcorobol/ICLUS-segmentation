@@ -122,7 +122,7 @@ router.get('/', async function(req, res, next) {
   let my_query =
 `SELECT ${SELECT.join(', ')} FROM (
   SELECT ${SUBSELECT.join(', ')} FROM (
-    SELECT ${SUBSUBSELECT.join(', ')} FROM app_file_flat
+    SELECT ${SUBSUBSELECT.join(', ')} FROM files_segmentations
     ${WHERE.length>0?'WHERE':''} ${WHERE.map( w=>'('+w+')').join(' AND ')}
   ) AS _rounded
 ) AS __clustered

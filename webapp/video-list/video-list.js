@@ -17,7 +17,8 @@ globalThis.videoList = {
                 { text: "Frequency", value: "frequency", options:[], select: [] },
                 { text: "Focal point", value: "focal_point", options:[], select: [] },
                 { text: "Pixel density", value: "pixel_density", options:[], select: [], filterName: "pixelDensity" },
-                { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] }
+                { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] },
+                { text: "Segmentations", value: "segmentations_count", options:[], select: [] }
             ],
             
             roundDepthBy: "null",
@@ -233,6 +234,13 @@ globalThis.videoList = {
                 return filter
             else // default filter
                 return (id) => (id!=null?id:'null')
+        },
+
+        segmentOne: function () {
+            let len = this.videos.length
+            let ran = Math.random()
+            let item = this.videos[ Math.floor(len*ran) ]
+            window.open("#/segment?analysis_id=" + item.analysis_id + "&area_code=" + item.file_area_code)
         }
 
     },
@@ -241,9 +249,9 @@ globalThis.videoList = {
         <v-container fluid>
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
-            <v-btn type="button" :href="query" :download="query" target="_blank">Get JSON data</v-btn>
-            <v-btn type="button" :href="'/zip/clipped_'+selectedWhereParams(headers).join(' AND ')+'.zip'">Download files</v-btn>
-            <v-btn type="button" v-on:click="">Segment one</v-btn>
+            <v-btn type="button" :href="query" :download="query" target="_blank">Get .json</v-btn>
+            <v-btn type="button" :href="'/zip/clipped_'+selectedWhereParams(headers).join(' AND ')+'.zip'">Download .zip</v-btn>
+            <v-btn type="button" v-on:click="segmentOne()">Segment one randomly</v-btn>
 
             <template>
             <v-data-table
@@ -369,6 +377,30 @@ globalThis.videoList = {
                 </template>
                 <template v-slot:item.profile_scanner_brand="{ item }">
                     {{ item.profile_scanner_brand }} - {{ item.profile_label }}
+                </template>
+                <template v-slot:item.segmentations_count="{ item }">
+                    <span v-if="! item.segmentations_count > 0">
+                        No segmentations
+                    </span>
+                    <span v-if="item.segmentations_count > 0">
+                        {{ item.segmentations_count }} segmentations
+                        [
+                        <span v-for="segmentation_id in item.segmentations_ids">
+                            <router-link
+                                v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code +'&segment_id='+ segmentation_id +'&step=3' "
+                            >
+                                {{ segmentation_id }}
+                            </router-link>
+                            ,
+                        </span>
+                        ]
+                        </br>
+                    </span>
+                    <router-link
+                            v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code +'&step=3' "
+                        >
+                        Segment now!
+                    </router-link>
                 </template>
 
                 <template v-slot:expanded-item="{ headers, item }">
