@@ -6,6 +6,7 @@ const db = require('../db');
 var videoElaborator = require('../video_elaborator/videoElaborator');
 const multer = require("multer");
 const fs = require('fs');
+const paths = require('../paths/paths');
 
 
 
@@ -124,25 +125,20 @@ router.post('/', upload.single('file'), async function(req, res, next) {
   let analysisId = body.analysis_id
   let areaCode = body.file_area_code
 
-  let assignedFolder = process.env.UNZIPPED+'/'+patientId+'/'+analysisId+'/raw/'
-  let assignedFileName = 'video_'+analysisId+'_'+areaCode
-  let originalFileExtension = file.originalname.split('.').slice(-1)
-  let assignedCompletePath = assignedFolder+assignedFileName+'.'+originalFileExtension
+  let rawFolder = paths.rawFolder(patientId, analysisId)
+  let videoPath = paths.rawVideo(patientId, analysisId, areaCode, path.extname(file.originalname) )
+  let snapshotPath = paths.snapshot(patientId, analysisId, areaCode)
   
 
 
-  if ( !fs.existsSync(assignedFolder) )
-    fs.mkdirSync(assignedFolder, { recursive: true });
-  if ( !fs.existsSync(assignedCompletePath) )
-    fs.copyFileSync( file.path, assignedCompletePath, fs.constants.COPYFILE_EXCL );
+  if ( !fs.existsSync(rawFolder) )
+    fs.mkdirSync(rawFolder, { recursive: true });
+  if ( !fs.existsSync(videoPath) )
+    fs.copyFileSync( file.path, videoPath, fs.constants.COPYFILE_EXCL );
   
 
   
-  let elabData = await videoElaborator(
-    rawFolder = assignedFolder,
-    videoFileName = assignedFileName+'.'+originalFileExtension,
-    'snapshot_'+analysisId+'_'+areaCode+'.png'
-  );
+  let elabData = await videoElaborator(videoPath, snapshotPath);
   console.log(elabData)
 
   

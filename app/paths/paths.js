@@ -16,8 +16,36 @@ function croppingMask(patientId, analysisId, areaCode) {
 }
 
 // patientId/analysisId/raw/video_analysisId_areaCode.*
-function rawVideo(patientId, analysisId, areaCode) {
+function rawFolder(patientId, analysisId) {
+
+  let folder = path.join(
+    process.env.UNZIPPED,
+    String(patientId),
+    String(analysisId),
+    '/raw/'
+  )
+    
+  return path.resolve( folder )
+}
+
+// patientId/analysisId/raw/video_analysisId_areaCode.*
+function rawVideo(patientId, analysisId, areaCode, extension=null) {
   
+  // if extension is known/provided
+  if(extension) {
+    // if extension does not start with '.'
+    if (extension[0]!='.')
+      extension = '.'+extension
+    return path.resolve( path.join(
+      process.env.UNZIPPED,
+      String(patientId),
+      String(analysisId),
+      '/raw/',
+      `video_${analysisId}_${areaCode}${extension}`
+    ) )
+  }
+
+
   function findFile(folder, fileName) {
     if (fs.existsSync(folder)) {
       let files = fs.readdirSync(folder);
@@ -68,14 +96,23 @@ function clippedVideo(patientId, analysisId, areaCode) {
 }
 
 // patientId/analysisId/clipped/snapshot_${analysisId}_${areaCode}_${timemark}.png
-function snapshot(patientId, analysisId, areaCode, timemark) {
-  return path.resolve( path.join(
-    process.env.UNZIPPED,
-    String(patientId),
-    String(analysisId),
-    '/clipped/',
-    `snapshot_${analysisId}_${areaCode}_${timemark}.png`
-  ) )
+function snapshot(patientId, analysisId, areaCode, timemark=null) {
+  if(timemark)
+    return path.resolve( path.join(
+      process.env.UNZIPPED,
+      String(patientId),
+      String(analysisId),
+      '/clipped/',
+      `snapshot_${analysisId}_${areaCode}_${timemark}.png`
+    ) )
+  else
+    return path.resolve( path.join(
+      process.env.UNZIPPED,
+      String(patientId),
+      String(analysisId),
+      '/raw/',
+      `snapshot_${analysisId}_${areaCode}.png`
+    ) )
 }
 
 // patientId/analysisId/clipped/segmentation_${segmentationId}_rated_${rate}_snapshot_${analysisId}_${areaCode}_${timemark}.png`
@@ -109,4 +146,4 @@ function segmentation(patientId, analysisId, areaCode, timemark, segmentationId,
 
 
 
-module.exports = {croppingMask, rawVideo, mp4Video, clippedVideo, snapshot, segmentation};
+module.exports = {croppingMask, rawVideo, rawFolder, mp4Video, clippedVideo, snapshot, segmentation};

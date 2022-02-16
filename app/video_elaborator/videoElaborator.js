@@ -6,26 +6,27 @@ const { createCanvas, loadImage } = require('canvas')
 const getSize = require('./getSize');
 const sharp = require('sharp');
 const { throws } = require('assert');
+const path = require('path');
 
 
 
-async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
-    
+async function videoElaborator(videoPath, snapshotPath) {
+
     const video = {}
     
     // check file exists
-    if ( !fs.existsSync(rawFolder+videoFileName) )
-        throw new Error('path not valid ' + rawFolder + videoFileName);
+    if ( !fs.existsSync(videoPath) )
+        throw new Error('path not valid ' + videoPath);
     
     /**
      * get length and take snapshot
      */
     // CASE video
-    var videoExtension = video.videoExtension = videoFileName.split('.')[1];
-    if (videoExtension!='JPG' && videoExtension!='jpg') {
+    var videoExtension = video.videoExtension = path.extname(videoPath)
+    if (videoExtension!='.JPG' && videoExtension!='.jpg') {
 
         // get video length
-        var frames = await new Promise( (res) => ffmpeg.ffprobe(rawFolder + videoFileName, function(err, metadata) {
+        var frames = await new Promise( (res) => ffmpeg.ffprobe(videoPath, function(err, metadata) {
                 //console.dir(metadata); // all metadata
                 if(metadata && metadata.streams && metadata.streams[0])
                     res(metadata.streams[0].nb_frames);
@@ -37,13 +38,13 @@ async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
         video.nb_frames = frames;
 
         // Take snapshot
-        if ( !fs.existsSync(rawFolder + snapshotFileName) ) {
+        if ( !fs.existsSync(snapshotPath) ) {
 
-            await snapshot( rawFolder, videoFileName, snapshotFileName )
+            await snapshot( videoPath, snapshotPath )
 
             // Throw error if snapshot not taken
-            if( !fs.existsSync(rawFolder + snapshotFileName) )
-                throw new Error('no snapshot taken for video ' + videoFileName)
+            if( !fs.existsSync(snapshotPath) )
+                throw new Error('no snapshot taken for video ' + videoPath)
             
         }
 
@@ -54,11 +55,11 @@ async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
         // set nb_frames
         video.nb_frames = 1;
 
-        // console.log("converting image from "+rawFolder + videoFileName+" to "+rawFolder + snapshotFileName)
-        await sharp(rawFolder + videoFileName).toFile(rawFolder + snapshotFileName)
+        // console.log("converting image from "+videoPath+" to "+snapshotPath)
+        await sharp(videoPath).toFile(snapshotPath)
         .catch( (err) => {
-            // console.log('no snapshot taken for image ' + videoFileName);
-            // video.videoError = 'no snapshot taken for image ' + videoFileName;
+            // console.log('no snapshot taken for image ' + videoPath);
+            // video.videoError = 'no snapshot taken for image ' + videoPath;
             throw err;
         });
 
@@ -69,15 +70,15 @@ async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
     /**
      * get dimensions
      */
-    // let {width, height} = await loadImage(rawFolder + snapshotFileName); // Slower then image-size used in getSize
-    let dimensions = video.dimensions = {width, height} = await getSize(rawFolder + snapshotFileName);      // Faster then canvas.loadImage
+    // let {width, height} = await loadImage(snapshotPath); // Slower then image-size used in getSize
+    let dimensions = video.dimensions = {width, height} = await getSize(snapshotPath);      // Faster then canvas.loadImage
 
 
 
     /**
      * Detect scanner profile
      */
-    var profile = {label, brand, depthElab, freqElab, focalPointElab} = await detectScannerProfile( rawFolder + snapshotFileName, dimensions );
+    var profile = {label, brand, depthElab, freqElab, focalPointElab} = await detectScannerProfile( snapshotPath, dimensions );
     video.profileLabel = profile.label;
     video.profileScannerBrand = profile.brand;
     
@@ -101,18 +102,18 @@ async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
     canvasCtx.font = 'bold 12pt Menlo'
     
     // Depth
-    let D_cropFileName = snapshotFileName.split('.').slice(0,-1).join('').concat('_D.png')
-    video.depth = await processField( rawFolder, snapshotFileName, D_cropFileName, 'D', profile.depthElab, {canvasCtx} );
+    let D_cropPath = path.join( path.dirname(snapshotPath), path.basename(snapshotPath, '.png') + '_D.png' );
+    video.depth = await processField( snapshotPath, D_cropPath, 'D', profile.depthElab, {canvasCtx} );
     
     // Freq
-    let F_cropFileName = snapshotFileName.split('.').slice(0,-1).join('').concat('_F.png')
-    video.frequency = await processField( rawFolder, snapshotFileName, F_cropFileName, 'F', profile.freqElab, {canvasCtx} );
+    let F_cropPath = path.join( path.dirname(snapshotPath), path.basename(snapshotPath, '.png') + '_F.png' );
+    video.frequency = await processField( snapshotPath, F_cropPath, 'F', profile.freqElab, {canvasCtx} );
     
     // focalPoint
-    let Fc_cropFileName = snapshotFileName.split('.').slice(0,-1).join('').concat('_Fc.png')
+    let Fc_cropPath = path.join( path.dirname(snapshotPath), path.basename(snapshotPath, '.png') + '_Fc.png' );
     let {value: focalPointValue,
         extraData: {focalPoint, rulerLenght, focalPointTopPx, rulerZeroTopPx, rulerMaxTopPx, depthTopPx, pixelsPerCm}
-    } = video.focalPoint = await processField( rawFolder, snapshotFileName, Fc_cropFileName, 'Fc', profile.focalPointElab, {depth: video.depth.value, canvasCtx} );
+    } = video.focalPoint = await processField( snapshotPath, Fc_cropPath, 'Fc', profile.focalPointElab, {depth: video.depth.value, canvasCtx} );
     
     if ( pixelsPerCm )
         video.pixel_density = pixelsPerCm; // [pixels/cm]
@@ -123,9 +124,9 @@ async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
 
     // save annotated canvasCtx on file
     // var data = canvasCtx.getImageData(0, 0, canvasCtx.canvas.width, canvasCtx.canvas.height).data;
-    let annotation_FileName = 'annotation_' + snapshotFileName.split('_').slice(1).join('_');
-    // if ( !fs.existsSync(rawFolder + annotationFileName) )
-        fs.writeFileSync(rawFolder + annotation_FileName, canvas.toBuffer('image/png'));
+    let annotationPath = path.join( path.dirname(snapshotPath), 'annotation_' + path.basename(snapshotPath).split('_').slice(1).join('_') );
+    // if ( !fs.existsSync(annotationPath) )
+        fs.writeFileSync(annotationPath, canvas.toBuffer('image/png'));
     
 
     
@@ -138,7 +139,7 @@ async function videoElaborator(rawFolder, videoFileName, snapshotFileName) {
 
 
 
-async function processField( rawFolder, snapshotFile, croppedFile, fieldCode, fieldElab, currentInfo ) {
+async function processField( snapshotPath, croppedPath, fieldCode, fieldElab, currentInfo ) {
     
     if (!fieldElab || !(fieldElab instanceof Function)) {
         // console.log('unavailable elaboration function for field ' + fieldCode + ' for ' + snapshotFile)
@@ -146,7 +147,7 @@ async function processField( rawFolder, snapshotFile, croppedFile, fieldCode, fi
     }
     
     // call scanner-specific field-specific snapshot elaborator
-    var elab = await fieldElab( rawFolder + snapshotFile, rawFolder + croppedFile, currentInfo );
+    var elab = await fieldElab( snapshotPath, croppedPath, currentInfo );
 
     if (!elab) {
         // console.log('field ' + fieldCode + ' not correctly processed for' + snapshotFile);

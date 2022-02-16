@@ -18,21 +18,8 @@ function fastcsvWritePromisified(rows, options, path) {
   });
 }
 
-// if (!('toJSON' in Error.prototype))
-// Object.defineProperty(Error.prototype, 'toJSON', {
-//     value: function () {
-//         var alt = {};
 
-//         Object.getOwnPropertyNames(this).forEach(function (key) {
-//             alt[key] = this[key];
-//         }, this);
 
-//         return alt;
-//     },
-//     configurable: true,
-//     writable: true
-// });
-  
 // var csvHeader = [
 //   {id: 'structure_id',    title: 'structure_id'       },
 //   {id: 'operator_id',     title: 'operator_id'        },
@@ -63,7 +50,7 @@ function fastcsvWritePromisified(rows, options, path) {
  * For example:
  *   flattenObject{ a: 1, b: { c: 2 } }
  * Returns:
- *   { a: 1, c: 2}
+ *   { "a": 1, "b.c": 2}
  */
  const flattenObject = (obj, namespace = '') => {
   const flattened = {}

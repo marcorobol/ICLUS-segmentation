@@ -25,6 +25,7 @@
   "homepage": "https://github.com/2020-unitn-SE2/EasyLib#readme",
   "dependencies": {
     "adm-zip": "^0.5.9",
+    "aws-sdk": "^2.1074.0",
     "canvas": "^2.7.0",
     "chart.js": "^2.9.4",
     "csv-writer": "^1.6.0",
