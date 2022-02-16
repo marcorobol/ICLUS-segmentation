@@ -123,7 +123,7 @@ router.use('/cropping-mask_:analysisId(\\d+)_:areaCode(\\d+).png', function(req,
 async function croppingMask(analysisId, areaCode) {
   
   // select file
-  let entry = await db.select_file(analysisId, areaCode)
+  let entry = await db.selectFile(analysisId, areaCode)
   // get patientId
   var patientId = entry.patient_id
   // get resolution
@@ -202,7 +202,7 @@ router.use('/segmentation_:segmentationId(\\d+)_snapshot_:analysisId(\\d+)_:area
   const timemark = req.params.timemark;
 
   // SELECT FROM app_file_flat
-  let entry = await db.select_file(analysis_id, area_code)
+  let entry = await db.selectFile(analysis_id, area_code)
   const patient_id = entry.patient_id
 
   // SELECT FROM segmentations
@@ -241,7 +241,7 @@ router.use('/segmentation_:segmentationId(\\d+).png', async function(req, res, n
   const rate = segmentation.rate
 
   // SELECT FROM app_file_flat
-  let file = await db.select_file(analysis_id, area_code)
+  let file = await db.selectFile(analysis_id, area_code)
   const patient_id = file.patient_id
 
   // paths

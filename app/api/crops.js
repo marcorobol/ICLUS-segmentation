@@ -7,17 +7,9 @@ const overlayVideos = require('../mp4/overlayVideos')
 
 
 
-router.get('/', async function(req, res) {
-  console.log("crops.get")
-  let client = await req.pool.connect();
-  let query = `SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)='${req.params.video_ref}'`
-  let query_res = await client.query(query)
-  .catch(err => {
-    console.log(err.stack)
-  })
-  client.release()
-  
-  res.json(query_res.rows);
+router.get('/', async function(req, res, next) {
+  let rows = await db.selectCrops(req.analysis_id, req.area_code).catch(next)
+  res.json(rows);
 });
 
 
@@ -29,17 +21,10 @@ router.post('/', async function(req, res) {
   const area_code = req.area_code
   const crop_bounds = req.body.bounds
 
-  let client = await req.pool.connect();
-  let query = `INSERT INTO crops VALUES ( DEFAULT, $1, $2, $3, $4, $5 )`;
-  let query_res = await client.query(query, [crop_created_at, user_id, analysis_id, area_code, JSON.stringify(req.body.bounds)])
-    .catch(err => {
-      console.log(err.stack)
-    })
-  client.release()
-  
+  let query_res = await db.insertUpdateCrop(user_id, analysis_id, area_code, JSON.stringify(req.body.bounds))
   
   // select file
-  let entry = await db.select_file(analysis_id, area_code)
+  let entry = await db.selectFile(analysis_id, area_code)
   // get patientId
   var patient_id = entry.patient_id
   // get resolution

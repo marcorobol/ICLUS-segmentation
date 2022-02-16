@@ -1,6 +1,7 @@
 require('dotenv').config()
-const db = require('./app/db');
 const sizeOf = require('image-size');
+const db = require('../app/db');
+const paths = require('../app/paths/paths');
 
 
 
@@ -17,27 +18,32 @@ function sizeOfPromisified(snapshotPath) {
 
 async function resolution_all_video() {
 
-  const query_res = await db.query(`SELECT * FROM app_file_flat`).catch(next)
+  const rows = await db.selectFiles();//.catch( err => console.log(err) )
+  
+  for (let row of rows) {
+    
+    let patientId = row.patient_id;
+    let analysisId = row.analysis_id;
+    let areaCode = row.file_area_code;
+    
+    console.log("Resolving ", patientId, analysisId, areaCode)
+    
+    let snapshotPath = paths.snapshot(patientId, analysisId, areaCode)
 
-  for (row of query_res.rows) {
-    console.log("Resolving ", row.patient_id, row.analysis_id, row.file_area_code)
-    
-    let folder = process.env.UNZIPPED+'/'+row.patient_id+'/'+row.analysis_id+'/raw/'
-    var snapshotPath = folder + 'snapshot_' + row.analysis_id + '_' + row.file_area_code + '.png'
-    
     await sizeOfPromisified(snapshotPath)
-    .then( async (resolution) => {
-      row.extra.resolution = resolution
-
-      await db.query(`UPDATE app_file_flat SET extra = $1 WHERE CONCAT(analysis_id,'_',file_area_code)=$2`,
-        [row.extra, row.analysis_id+'_'+row.file_area_code] ).catch(next)
+    .then( (resolution) => {
+      row.extra.resolution = resolution;
+      return db.query(`UPDATE app_file_flat SET extra = $1 WHERE CONCAT(analysis_id,'_',file_area_code)=$2`,
+        [row.extra, row.analysis_id+'_'+row.file_area_code] );
     })
-    .catch( (err) => {} )
+    .catch( err => console.log(err) )
 
   }
 
 }
+
 resolution_all_video()
+.catch( err => console.log(err) )
 
 
 

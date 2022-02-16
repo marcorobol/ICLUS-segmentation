@@ -19,12 +19,15 @@ function croppingMask(patientId, analysisId, areaCode) {
 function rawVideo(patientId, analysisId, areaCode) {
   
   function findFile(folder, fileName) {
-    let files = fs.readdirSync(folder);
-    for (var f of files) {
-      if ( f.split('.')[0] == fileName )
-        return f;
+    if (fs.existsSync(folder)) {
+      let files = fs.readdirSync(folder);
+      for (var f of files) {
+        if ( f.split('.')[0] == fileName )
+          return f;
+      }
     }
-    throw new Error('no file Found for', fileName, 'in folder', folder)
+    return null;
+    throw new Error('paths/paths.js: No file Found for ' + fileName + ' in folder ' + folder)
   }
 
   let folder = path.join(
@@ -33,9 +36,24 @@ function rawVideo(patientId, analysisId, areaCode) {
     String(analysisId),
     '/raw/'
   )
+  
   let file = findFile(folder, 'video_'+analysisId+'_'+areaCode)
-
+  
+  if (file==null)
+    return null;
+    
   return path.resolve( path.join( folder, file ) )
+}
+
+// patientId/analysisId/raw/video_analysisId_areaCode.mp4
+function mp4Video(patientId, analysisId, areaCode) {
+  return path.resolve( path.join(
+    process.env.UNZIPPED,
+    String(patientId),
+    String(analysisId),
+    '/raw/',
+    `video_${analysisId}_${areaCode}.mp4`
+  ) )
 }
 
 // patientId/analysisId/clipped/video_analysisId_areaCode.*
@@ -91,4 +109,4 @@ function segmentation(patientId, analysisId, areaCode, timemark, segmentationId,
 
 
 
-module.exports = {croppingMask, rawVideo, clippedVideo, snapshot, segmentation};
+module.exports = {croppingMask, rawVideo, mp4Video, clippedVideo, snapshot, segmentation};

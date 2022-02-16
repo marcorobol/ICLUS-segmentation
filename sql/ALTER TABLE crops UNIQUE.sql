@@ -1,0 +1,1 @@
+ALTER TABLE crops ADD UNIQUE (analysis_id, area_code)

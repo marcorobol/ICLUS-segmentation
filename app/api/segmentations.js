@@ -6,15 +6,7 @@ const snapshot = require('../png/snapshot')
 const createSegmentedSnapshot = require('../png/createSegmentedSnapshot')
 
 router.get('/', async function(req, res, next) {
-  // let client = await req.pool.connect();
-  // let query = `SELECT * FROM segmentations WHERE CONCAT(analysis_id,'_',area_code) = $1 `
-  // console.log(query)
-  // let query_res = await client.query(query, [req.query.analysis_id + "_" + req.query.area_code])
-  // .catch(err => {
-  //   console.log(err.stack)
-  // })
-  // client.release()
-
+  
   const where = []
   if (req.query.where && Array.isArray(req.query.where))
     where.push.apply( where, req.query.where )
@@ -33,20 +25,10 @@ router.get('/', async function(req, res, next) {
   res.json(query_res.rows);
 });
 
-var segmentations_stats = require('./segmentations_stats');
-router.use('/stats', segmentations_stats)
 
-// router.get('/stats', async function(req, res) {
-//   let client = await req.pool.connect();
-//   let query = `SELECT rate,	COUNT(*) as count FROM segmentations GROUP BY rate`
-//   console.log(query)
-//   let query_res = await client.query(query)
-//   .catch(err => {
-//     console.log(err.stack)
-//   })
-//   client.release()
-//   res.json(query_res.rows);
-// });
+
+const segmentations_stats = require('./segmentations_stats');
+router.use('/stats', segmentations_stats)
 
 
 
@@ -66,8 +48,7 @@ router.post('/', async function(req, res, next) {
     console.log(err.stack)
   })
 
-
-
+  
   // Take snapshot and create segmentation
   {
     const analysis_id = req.body.analysis_id;
@@ -78,7 +59,7 @@ router.post('/', async function(req, res, next) {
     const segmentation_id = query_res.rows[0].segmentation_id
     
     // select file and get patient_id
-    let entry = await db.select_file(analysis_id, area_code)
+    let entry = await db.selectFile(analysis_id, area_code)
     const patient_id = entry.patient_id
     
     // paths
