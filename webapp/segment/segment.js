@@ -92,9 +92,10 @@ globalThis.segment = {
         fetchApiVideo(this.analysis_id, this.area_code).then( response => {
             console.log('Matadata:', response)
             this.metadata = response
-            this.original_resolution = {width: this.metadata.extra.resolution.width, height: this.metadata.extra.resolution.height}
             this.width = this.metadata.extra.resolution.width
             this.height = this.metadata.extra.resolution.height
+            this.original_resolution = {width: this.width, height: this.height}
+            this.patient_id = this.metadata.patient_id
         })
         fetchApprovals(this.analysis_id, this.area_code).then( response => {
             console.log('Approvals:', response)

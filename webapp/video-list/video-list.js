@@ -242,7 +242,7 @@ globalThis.videoList = {
             let len = this.videos.length
             let ran = Math.random()
             let item = this.videos[ Math.floor(len*ran) ]
-            window.open("#/segment?analysis_id=" + item.analysis_id + "&area_code=" + item.file_area_code)
+            window.open("#/segment?patient_id=" + item.patient_id + "&analysis_id=" + item.analysis_id + "&area_code=" + item.file_area_code)
         }
 
     },
@@ -399,7 +399,7 @@ globalThis.videoList = {
                         </br>
                     </span>
                     <router-link
-                            v-bind:to=" '/segment?analysis_id='+ item.analysis_id +'&area_code='+ item.file_area_code +'&step=3' "
+                            v-bind:to=" '/segment?patient_id=' + patient_id + '&analysis_id=' + item.analysis_id + '&area_code=' + item.file_area_code + '&step=3' "
                         >
                         Segment now!
                     </router-link>
