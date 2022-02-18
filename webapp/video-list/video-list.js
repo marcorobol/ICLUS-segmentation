@@ -12,13 +12,13 @@ globalThis.videoList = {
                 { text: "Analysis", value: "analysis_id", options:[], select: [] },
                 { text: "Area", value: "file_area_code", options:[], select: [] },
                 { text: "Status", value: "analysis_status", options:[], select: [], filterName: "covidStatus" },
-                { text: "Rating", value: "rating_operator", options:[], select: [], filterName: "ratingLabel" },
+                { text: "Operator rate", value: "rating_operator", options:[], select: [], filterName: "ratingLabel" },
                 { text: "Depth", value: "depth", options:[], select: [] },
                 { text: "Frequency", value: "frequency", options:[], select: [] },
                 { text: "Focal point", value: "focal_point", options:[], select: [] },
                 { text: "Pixel density", value: "pixel_density", options:[], select: [], filterName: "pixelDensity" },
                 { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] },
-                { text: "Segmentations", value: "segmentations_count", options:[], select: [] }
+                { text: "Segmentations", value: "segmentations_count", options:[], select: [], filterName: "ratingLabel" }
             ],
             
             roundDepthBy: "null",
@@ -94,7 +94,9 @@ globalThis.videoList = {
                 5: 'Pleural Line',
                 6: 'Pleural Effusion',
                 7: 'Vertical Artifact',
-                null: 'Not labelled'
+                8: 'White Lung',
+                9: 'Horizontal Artifact',
+                null: 'Unlabelled'
             }[id]
         },
         pixelDensity: function(num) {
@@ -370,7 +372,7 @@ globalThis.videoList = {
                     {{ item.analysis_status | covidStatus }}
                 </template>
                 <template v-slot:item.rating_operator="{ item }">
-                    {{ item.rating_operator | ratingLabel }}
+                    Rate {{ item.rating_operator?item.rating_operator:'unavailable' }}
                 </template>
                 <template v-slot:item.pixel_density="{ item }">
                     {{ item.pixel_density | pixelDensity }}

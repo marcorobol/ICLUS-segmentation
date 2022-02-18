@@ -4,6 +4,7 @@ const paths = require('../paths/paths')
 const db = require('../db');
 const createCroppingMask = require('../png/createCroppingMask')
 const overlayVideos = require('../mp4/overlayVideos')
+const createCsv = require('../zip/createCsv')
 
 
 
@@ -14,7 +15,7 @@ router.get('/', async function(req, res, next) {
 
 
 
-router.post('/', async function(req, res) {
+router.post('/', async function(req, res, next) {
   const crop_created_at = new Date()
   const user_id = 0;
   const analysis_id = req.analysis_id
@@ -24,23 +25,38 @@ router.post('/', async function(req, res) {
   let query_res = await db.insertUpdateCrop(user_id, analysis_id, area_code, JSON.stringify(req.body.bounds))
   
   // select file
-  let entry = await db.selectFile(analysis_id, area_code)
+  let file = await db.selectFile(analysis_id, area_code)
   // get patientId
-  var patient_id = entry.patient_id
+  var patient_id = file.patient_id
   // get resolution
-  var {width, height} = entry.extra.resolution;
+  var {width, height} = file.extra.resolution;
   
   // paths
   let croppingMaskPath = paths.croppingMask(patient_id, analysis_id, area_code)
   let rawVideoPath = paths.rawVideo(patient_id, analysis_id, area_code)
   let clippedVideoPath = paths.clippedVideo(patient_id, analysis_id, area_code)
+  let cropCsvPath = paths.cropCsv(patient_id, analysis_id, area_code)
   
   // create mask png Synch!
   createCroppingMask(croppingMaskPath, {width, height}, {x,w,th,y,h,ch,bh} = crop_bounds)
 
-  // create overlay mp4
-  await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath)
+  // select approvals
+  let approvals = await db.selectApprovals(analysis_id, area_code).catch(next)
+  let last_approval = approvals[approvals.length-1]
+  let trim = {
+    start: last_approval.cut_beginning,
+    duration: last_approval.cut_end - last_approval.cut_beginning
+  }
 
+  // create overlay mp4
+  await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath, {trim}).catch(next)
+
+  // json
+  // fs.writeFileSync(metadataJsonPath, JSON.stringify(req.body.bounds))
+  // csv
+  let flatCsvRows = await createCsv([req.body.bounds], cropCsvPath)
+  
+  // return
   res.json(query_res);
 });
 

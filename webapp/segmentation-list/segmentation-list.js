@@ -333,7 +333,7 @@ globalThis.segmentationList = {
                                 v-model="column.select"
                                 :items="column.hideEmptyOptions?column.options.filter(o=>o.counter>0||column.select.includes(o.id)):column.options"
                                 item-value="id"
-                                :item-text="opt => getFilterOfHeader(column)(opt.id) + ' - ' + opt.counter + ' videos'"
+                                :item-text="opt => getFilterOfHeader(column)(opt.id) + ' - ' + opt.counter + ' segmentations'"
                                 :label="column.text"
                                 multiple
                                 chips

@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const db = require('../db');
+const paths = require('../paths/paths')
+const createCsv = require('../zip/createCsv')
 
 
 
@@ -16,7 +18,7 @@ router.get('/', async function(req, res, next) {
 });
 
 router.post('/', async function(req, res, next) {
-  const crop_created_at = new Date()
+  const approval_created_at = new Date()
   const user_id = 0;
   const analysis_id = req.analysis_id
   const area_code = req.area_code
@@ -29,10 +31,19 @@ router.post('/', async function(req, res, next) {
   const comment = req.body.comment
 
   let query = `INSERT INTO approvals VALUES ( DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 ) RETURNING *`;
-  let query_res = await db.query(query, [crop_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment])
+  let query_res = await db.query(query, [approval_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment])
     .catch(err => {
       next(err);
     })
+  
+  // select file and get patient_id
+  let file = await db.selectFile(analysis_id, area_code)
+  const patient_id = file.patient_id
+  
+  // csv
+  let approvalCsvPath = paths.approvalCsv(patient_id, analysis_id, area_code)
+  let flatCsvRows = await createCsv([{crop_created_at: approval_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment}], approvalCsvPath)
+
   res.json(query_res);
 });
 

@@ -169,7 +169,7 @@ globalThis.segment = {
             .catch( error => console.error(error) ); // If there is any error you will catch them here
         },
         deleteApproval: async function (approval_id) {
-            await deleteApproval(approval_id)
+            await deleteApproval(this.analysis_id, this.area_code, approval_id)
             this.approvals = await fetchApprovals(this.analysis_id, this.area_code)
         }
     },
@@ -464,7 +464,7 @@ globalThis.segment = {
                                             color="primary"
                                             @click="e1 = 3; confirmCrop(); changeStep(3)"
                                         >
-                                            Submit crop
+                                            Submit crop and create video
                                         </v-btn>
                                 
                                         <v-btn text

@@ -36,7 +36,7 @@ async function selectFiles() {
 
 async function selectCrops(analysisId, areaCode) {
     // let query = `SELECT * FROM crops WHERE CONCAT(analysis_id,'_',area_code)='${req.params.video_ref}'`
-    const query_res = await query(`SELECT * FROM crops WHERE analysis_id  =$1 AND area_code = $2`, [analysisId, areaCode])
+    const query_res = await query(`SELECT * FROM crops WHERE analysis_id = $1 AND area_code = $2`, [analysisId, areaCode])
     return query_res.rows
 }
 
@@ -51,4 +51,9 @@ async function insertUpdateCrop(user_id, analysis_id, area_code, bounds) {
     return query_res
 }
 
-module.exports = {query, selectFile, selectFiles, selectCrops, insertUpdateCrop};
+async function selectApprovals(analysisId, areaCode) {
+    const query_res = await query(`SELECT * FROM approvals WHERE analysis_id = $1 AND area_code = $2`, [analysisId, areaCode])
+    return query_res.rows
+}
+
+module.exports = {query, selectFile, selectFiles, selectCrops, insertUpdateCrop, selectApprovals};

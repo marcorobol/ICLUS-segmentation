@@ -10,7 +10,7 @@ Vue.component('my-footer', {
             'Blog',
             'Contact Us',
         ],
-        segmentations_stats: {0:0, 1:0, 2:0, 3:0, "null":0, 4:0, 5:0, 6:0, 7:0},
+        segmentations_stats: {0:0, 1:0, 2:0, 3:0, "null":0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0},
     }),
     async mounted () {
 
@@ -102,7 +102,7 @@ Vue.component('my-footer', {
                         >
                             {{ segmentations_stats["null"] }}
                         </v-avatar>
-                        Not Labelled
+                        Unlabelled
                     </v-chip>
                     <v-chip
                         class="ma-2"
@@ -151,6 +151,30 @@ Vue.component('my-footer', {
                             {{ segmentations_stats["7"] }}
                         </v-avatar>
                         Vertical Artifact
+                    </v-chip>
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["8"] }}
+                        </v-avatar>
+                        White Lung
+                    </v-chip>
+                    <v-chip
+                        class="ma-2"
+                        color="grey"
+                    >
+                        <v-avatar
+                            left
+                            class="grey darken-2"
+                        >
+                            {{ segmentations_stats["9"] }}
+                        </v-avatar>
+                        Horizontal Artifact
                     </v-chip>
                 </v-col>
 

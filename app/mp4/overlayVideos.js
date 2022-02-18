@@ -3,14 +3,16 @@ const ffmpeg = require('fluent-ffmpeg')
 
 
 
-async function overlayVideos(background, foreground, overlayed)  {
+function overlayVideos(background, foreground, overlayed, { trim: {start, duration} })  {
   
-  console.log(background)
-  console.log(foreground)
-
-  let status = await new Promise( (res) => ffmpeg()
+  // console.log(background)
+  // console.log(foreground)
+  
+  return new Promise( (res) => ffmpeg()
     // First input
     .input(background)
+    .setStartTime(start) //Can be in "HH:MM:SS" format also
+    .setDuration(duration)
     // Second input
     .input(foreground)
     // Filters

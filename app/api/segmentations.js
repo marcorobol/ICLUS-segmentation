@@ -4,6 +4,7 @@ const db = require('../db');
 const paths = require('../paths/paths')
 const snapshot = require('../png/snapshot')
 const createSegmentedSnapshot = require('../png/createSegmentedSnapshot')
+const createCsv = require('../zip/createCsv')
 
 router.get('/', async function(req, res, next) {
   
@@ -65,7 +66,8 @@ router.post('/', async function(req, res, next) {
     // paths
     let rawVideoPath = paths.rawVideo(patient_id, analysis_id, area_code)
     let snapshotPath = paths.snapshot(patient_id, analysis_id, area_code, timemark)
-    let segmentationPath = paths.segmentation(patient_id, analysis_id, area_code, timemark, segmentation_id, rate)
+    let segmentationPngPath = paths.segmentation(patient_id, analysis_id, area_code, timemark, segmentation_id, rate)
+    let segmentationCsvPath = paths.segmentationCsv(patient_id, analysis_id, area_code, timemark, segmentation_id, rate)
 
     // jpg file found instead of video file
     // let videoExtension = rawVideoPath.split('.')[1];
@@ -76,8 +78,10 @@ router.post('/', async function(req, res, next) {
     await snapshot(rawVideoPath, snapshotPath, timemark).catch( next )
 
     // create mask png
-    await createSegmentedSnapshot(snapshotPath, segmentationPath, points)
+    await createSegmentedSnapshot(snapshotPath, segmentationPngPath, points)
 
+    // csv
+    let flatCsvRows = await createCsv([{segmentation_id, analysis_id, area_code, timemark, points, rate}], segmentationCsvPath)
   }
   
 

@@ -15,6 +15,26 @@ function croppingMask(patientId, analysisId, areaCode) {
   ) )
 }
 
+function cropCsv(patientId, analysisId, areaCode) {
+  return path.resolve( path.join(
+    process.env.UNZIPPED,
+    String(patientId),
+    String(analysisId),
+    '/clipped/',
+    `crop_${analysisId}_${areaCode}.csv`
+  ) )
+}
+
+function approvalCsv(patientId, analysisId, areaCode) {
+  return path.resolve( path.join(
+    process.env.UNZIPPED,
+    String(patientId),
+    String(analysisId),
+    '/clipped/',
+    `approval_${analysisId}_${areaCode}.csv`
+  ) )
+}
+
 // patientId/analysisId/raw/video_analysisId_areaCode.*
 function rawFolder(patientId, analysisId) {
 
@@ -125,25 +145,17 @@ function segmentation(patientId, analysisId, areaCode, timemark, segmentationId,
     `segmentation_${segmentationId}_rated_${rate}_snapshot_${analysisId}_${areaCode}_${timemark}.png`
   ) )
 }
-// function segmentation(patientId, analysisId, areaCode, timemark, segmentationId, rate) {
-//   function findFile(folder, fileName) {
-//     let files = fs.readdirSync(folder);
-//     for (var f of files) {
-//       if ( f.slice(0,fileName.length) == fileName )
-//         return f;
-//     }
-//     throw new Error('no file Found for', fileName, 'in folder', folder)
-//   }
-//   var folder =  path.join(
-//     process.env.UNZIPPED,
-//     String(patientId),
-//     String(analysisId),
-//     '/clipped/'
-//   )
-//   let file = findFile(folder, `segmentation_${segmentationId}_`)
-//   return path.resolve( path.join( folder, file ) )
-// }
+
+function segmentationCsv(patientId, analysisId, areaCode, timemark, segmentationId, rate) {
+  return path.resolve( path.join(
+    process.env.UNZIPPED,
+    String(patientId),
+    String(analysisId),
+    '/clipped/',
+    `segmentation_${segmentationId}_rated_${rate}_snapshot_${analysisId}_${areaCode}_${timemark}.csv`
+  ) )
+}
 
 
 
-module.exports = {croppingMask, rawVideo, rawFolder, mp4Video, clippedVideo, snapshot, segmentation};
+module.exports = {croppingMask, cropCsv, approvalCsv, rawVideo, rawFolder, mp4Video, clippedVideo, snapshot, segmentation, segmentationCsv};
