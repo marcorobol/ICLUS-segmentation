@@ -60,7 +60,7 @@ Vue.component('segment-table', {
                 let s = {
                     'analysis_id': this.analysis_id,
                     'area_code': this.area_code,
-                    'timestamp': this.videoCurrentTime,//this.player.currentTime(), //this.current_video_time, //$('#time')[0].value,
+                    'timestamp': Math.round(this.videoCurrentTime*100)/100,//this.player.currentTime(), //this.current_video_time, //$('#time')[0].value,
                     'rate': this.rate,
                     'points': this.segmentationTool.getPoints() //this.$root.$refs.segmentation_tool
                 }
