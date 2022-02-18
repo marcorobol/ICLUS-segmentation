@@ -26,12 +26,29 @@ router.get('/clipped_:where.zip', async function(req, res, next) {
   let query = `SELECT * FROM files_segmentations ${whereArray.length>0?'WHERE '+whereSql:''}`;
   const query_res = await db.query(query).catch(next)
 
+  await prepareAndSendZip(req, res, next, query_res.rows, {whereQueryString, whereArray, whereSql})
+
+});
+
+
+
+router.get('/clipped_.zip', async function(req, res, next) {
   
+  let query = `SELECT * FROM files_segmentations`;
+  const query_res = await db.query(query).catch(next)
+
+  await prepareAndSendZip(req, res, next, query_res.rows, {whereQueryString:'', whereArray:[], whereSql:''})
+
+});
+
+
   
+async function prepareAndSendZip(req, res, next, rows, {whereQueryString, whereArray, whereSql}) {
+
   const zip = new AdmZip();
   const outputFile = './tmp/'+req.url;
 
-  for (const row of query_res.rows) {
+  for (const row of rows) {
       var {patient_id, analysis_id, file_area_code} = row;
       
       // create specific csv video file
@@ -46,10 +63,20 @@ router.get('/clipped_:where.zip', async function(req, res, next) {
 
 
   // create global csv videos file
-  let partialCsvPath = './tmp/'+whereQueryString+'.csv'
+  let partialCsvPath = './tmp/videos_'+req.params.where+'.csv'
   await createCsv(rows, partialCsvPath)
   // add specific csv file
   zip.addLocalFile(partialCsvPath);
+
+
+
+  // // create global csv segmentations file
+  // let segmentations_query = `SELECT * FROM segmentations ${whereArray.length>0?'WHERE '+whereSql:''}`;
+  // let segmentations_query_res = await db.query(segmentations_query).catch(next)
+  // let partialSegCsvPath = './tmp/segmentations_'+req.params.where+'.csv'
+  // await createCsv(segmentations_query_res.rows, partialSegCsvPath)
+  // // add specific csv file
+  // zip.addLocalFile(partialSegCsvPath);
 
 
 
@@ -58,7 +85,7 @@ router.get('/clipped_:where.zip', async function(req, res, next) {
 
   res.sendFile(path.resolve(outputFile))
   
-});
+};
 
 
 

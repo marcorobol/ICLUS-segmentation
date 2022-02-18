@@ -251,7 +251,6 @@ globalThis.videoList = {
         <v-container fluid>
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
-            <v-btn type="button" :href="query" :download="query" target="_blank">Get .json</v-btn>
             <v-btn type="button" :href="'/zip/clipped_'+selectedWhereParams(headers).join(' AND ')+'.zip'">Download .zip</v-btn>
             <v-btn type="button" v-on:click="segmentOne()">Segment one randomly</v-btn>
 

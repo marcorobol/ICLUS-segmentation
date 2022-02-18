@@ -305,7 +305,6 @@ globalThis.segmentationList = {
         <v-container fluid>
 
             <v-btn type="button" v-on:click="refresh()">Refresh</v-btn>
-            <v-btn type="button" :href="query" :download="query" target="_blank">Get JSON data</v-btn>
 
             <template>
             <v-data-table
