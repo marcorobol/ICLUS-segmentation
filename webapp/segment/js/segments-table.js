@@ -107,7 +107,7 @@ Vue.component('segment-table', {
                             <tr v-for="seg in segments">
                                 <td>
                                     {{ seg.segmentation_id }}
-                                    <a :href="'/png/'+patient_id+'/'+analysis_id+'/'+area_code+'/'+seg.timestamp">png</a>
+                                    <a :href="'/unzipped/'+patient_id+'/'+analysis_id+'/clipped/segmentation_'+seg.segmentation_id+'_rated_'+seg.rate+'_snapshot_'+analysis_id+'_'+area_code+'_'+seg.timestamp+'.png'">png</a>
                                 </td>
                                 <td>
                                     {{ seg.timestamp }}

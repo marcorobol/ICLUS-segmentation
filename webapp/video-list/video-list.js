@@ -18,7 +18,7 @@ globalThis.videoList = {
                 { text: "Focal point", value: "focal_point", options:[], select: [] },
                 { text: "Pixel density", value: "pixel_density", options:[], select: [], filterName: "pixelDensity" },
                 { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] },
-                { text: "Segmentations", value: "segmentations_count", options:[], select: [], filterName: "ratingLabel" }
+                { text: "Segmentations", value: "segmentations_count", options:[], select: [] }
             ],
             
             roundDepthBy: "null",
@@ -399,7 +399,7 @@ globalThis.videoList = {
                         </br>
                     </span>
                     <router-link
-                            v-bind:to=" '/segment?patient_id=' + patient_id + '&analysis_id=' + item.analysis_id + '&area_code=' + item.file_area_code + '&step=3' "
+                            v-bind:to=" '/segment?patient_id=' + item.patient_id + '&analysis_id=' + item.analysis_id + '&area_code=' + item.file_area_code + '&step=3' "
                         >
                         Segment now!
                     </router-link>
