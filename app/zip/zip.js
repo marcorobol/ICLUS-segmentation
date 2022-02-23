@@ -53,7 +53,7 @@ async function prepareAndSendZip(req, res, next, rows, {whereQueryString, whereA
       
       // create specific csv video file
       var csvPath = process.env.UNZIPPED+'/'+patient_id+'/'+analysis_id+'/clipped/video_'+analysis_id+'_'+file_area_code+'.csv'
-      createCsv([row], csvPath)
+      await createCsv([row], csvPath)
 
       // add entire folder
       var localFolder = process.env.UNZIPPED+'/'+patient_id+'/'+analysis_id+'/clipped/'
