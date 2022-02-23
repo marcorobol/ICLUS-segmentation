@@ -63,7 +63,7 @@ async function prepareAndSendZip(req, res, next, rows, {whereQueryString, whereA
 
 
   // create global csv videos file
-  let partialCsvPath = './tmp/videos_'+req.params.where+'.csv'
+  let partialCsvPath = './tmp/videos.csv'
   await createCsv(rows, partialCsvPath)
   // add specific csv file
   zip.addLocalFile(partialCsvPath);

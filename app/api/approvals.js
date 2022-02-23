@@ -18,23 +18,21 @@ router.get('/', async function(req, res, next) {
 });
 
 router.post('/', async function(req, res, next) {
-  const approval_created_at = new Date()
-  const user_id = 0;
-  const analysis_id = req.analysis_id
-  const area_code = req.area_code
-	const depth = req.body.depth
-  const frequency = req.body.frequency
-  const focal_point = req.body.focal_point
-  const pixel_density = req.body.pixel_density
-  const cut_beginning = req.body.cut_beginning
-  const cut_end = req.body.cut_end
-  const comment = req.body.comment
+  var approval_created_at = new Date()
+  var user_id = 0;
+  var analysis_id = req.analysis_id
+  var area_code = req.area_code
+	var depth = req.body.depth
+  var frequency = req.body.frequency
+  var focal_point = req.body.focal_point
+  var pixel_density = req.body.pixel_density
+  var cut_beginning = req.body.cut_beginning
+  var cut_end = req.body.cut_end
+  var comment = req.body.comment
 
   let query = `INSERT INTO approvals VALUES ( DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 ) RETURNING *`;
   let query_res = await db.query(query, [approval_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment])
-    .catch(err => {
-      next(err);
-    })
+    .catch( next )
   
   // select file and get patient_id
   let file = await db.selectFile(analysis_id, area_code)
@@ -44,7 +42,13 @@ router.post('/', async function(req, res, next) {
   let approvalCsvPath = paths.approvalCsv(patient_id, analysis_id, area_code)
   let flatCsvRows = await createCsv([{crop_created_at: approval_created_at, user_id, analysis_id, area_code, depth, frequency, focal_point, pixel_density, cut_beginning, cut_end, comment}], approvalCsvPath)
 
-  res.json(query_res);
+  // UPDATE original record in app_file_flat
+  let filesQuery = `UPDATE app_file_flat SET depth=$1, frequency=$2, focal_point=$3, pixel_density=$4
+  WHERE analysis_id=$5 AND file_area_code=$6`;
+  let filesQueryRes = await db.query(filesQuery, [depth, frequency, focal_point, pixel_density, analysis_id, area_code])
+    .catch( next )
+  
+  res.json(filesQueryRes.rows[0]);
 });
 
 router.delete('/:approval_id', async function(req, res, next) {

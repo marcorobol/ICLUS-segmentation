@@ -18,6 +18,7 @@ globalThis.videoList = {
                 { text: "Focal point", value: "focal_point", options:[], select: [] },
                 { text: "Pixel density", value: "pixel_density", options:[], select: [], filterName: "pixelDensity" },
                 { text: "Scanner", value: "profile_scanner_brand", options:[], select: [] },
+                { text: "Cropped", value: "crops_count", options:[], select: [], filterName: "cropsCount" },
                 { text: "Segmentations", value: "segmentations_count", options:[], select: [] }
             ],
             
@@ -104,6 +105,13 @@ globalThis.videoList = {
         },
         listOfIds: function(list) {
             return (list?list.map( e => (e==null?'null':e) ).join(', '):'')
+        },
+        cropsCount: function(id) {
+            const statusMap = {
+                null: 'Not yet cropped',
+                1: 'Cropped'
+            }
+            return statusMap[id]
         }
     },
 
@@ -371,10 +379,13 @@ globalThis.videoList = {
                     {{ item.analysis_status | covidStatus }}
                 </template>
                 <template v-slot:item.rating_operator="{ item }">
-                    Rate {{ item.rating_operator?item.rating_operator:'unavailable' }}
+                    {{ item.rating_operator | ratingLabel }}
                 </template>
                 <template v-slot:item.pixel_density="{ item }">
                     {{ item.pixel_density | pixelDensity }}
+                </template>
+                <template v-slot:item.crops_count="{ item }">
+                    {{ item.crops_count | cropsCount }}
                 </template>
                 <template v-slot:item.profile_scanner_brand="{ item }">
                     {{ item.profile_scanner_brand }} - {{ item.profile_label }}
