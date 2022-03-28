@@ -137,6 +137,15 @@ var api_router = require('./api/api');
 app.use('/api', api_router)
 
 
+/**
+ * Scripts
+ */
+var create_not_confirmed_clipped_videos = require('../scripts/create_not_confirmed_clipped_videos')
+app.use('/create_not_confirmed_clipped_videos', async function(req, res) {
+  var results = await create_not_confirmed_clipped_videos()
+  res.json(results)
+});
+
 
 /**
  * Default 404 handler

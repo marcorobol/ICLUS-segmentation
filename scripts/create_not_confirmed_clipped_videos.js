@@ -1,7 +1,9 @@
 require('dotenv').config()
+const fs = require('fs')
 const db = require('../app/db');
 const paths = require('../app/paths/paths');
 const overlayVideos = require('../app/mp4/overlayVideos');
+const { listen } = require('../app/app');
 
 
 
@@ -34,13 +36,13 @@ async function script() {
 
   // console.log(query_res)
 
+  var results = {already_exist: [], created: []}
+
   for (let row of query_res.rows) {
 
     let crop_id = row.crop_id;
     let analysis_id = row.analysis_id;
     let area_code = row.area_code;
-
-    console.log("processing " + analysis_id + "_" + area_code)
     
     if(crop_id && analysis_id && area_code) {
       
@@ -54,16 +56,25 @@ async function script() {
       let rawVideoPath = paths.rawVideo(patient_id, analysis_id, area_code)
       let clippedVideoPath = paths.clippedVideo(patient_id, analysis_id, area_code)
 
+      if (fs.existsSync(clippedVideoPath)) {
+        console.log("skipped " + clippedVideoPath)
+        results.already_exist.push(clippedVideoPath)
+        continue;
+      }
+
       // create overlay mp4
       await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath)
       .catch(
         err => console.log(err)
       )
 
-      console.log("created video " + clippedVideoPath)
+      console.log("created " + clippedVideoPath)
+      results.created.push(clippedVideoPath)
       
     }
   }
+
+  return results;
 }
 
 script()
