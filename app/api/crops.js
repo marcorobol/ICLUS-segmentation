@@ -42,14 +42,20 @@ router.post('/', async function(req, res, next) {
 
   // select approvals
   let approvals = await db.selectApprovals(analysis_id, area_code).catch(next)
-  let last_approval = approvals[approvals.length-1]
-  let trim = {
-    start: last_approval.cut_beginning,
-    duration: last_approval.cut_end - last_approval.cut_beginning
-  }
+  if (approvals.length>0) {
+    let last_approval = approvals[approvals.length-1]
+    let trim = {
+      start: last_approval.cut_beginning,
+      duration: last_approval.cut_end - last_approval.cut_beginning
+    }
 
-  // create overlay mp4
-  await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath, {trim}).catch(next)
+    // create overlay mp4
+    await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath, {trim}).catch(next)
+  }
+  else {
+    // create overlay mp4
+    await overlayVideos(rawVideoPath, croppingMaskPath, clippedVideoPath).catch(next)
+  }
 
   // json
   // fs.writeFileSync(metadataJsonPath, JSON.stringify(req.body.bounds))

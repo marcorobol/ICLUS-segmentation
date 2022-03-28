@@ -3,18 +3,22 @@ const ffmpeg = require('fluent-ffmpeg')
 
 
 
-function overlayVideos(background, foreground, overlayed, { trim: {start, duration} })  {
+function overlayVideos(background, foreground, overlayed, { trim: {start, duration} } = { trim: {start: null, duration: null} } )  {
   
   // console.log(background)
   // console.log(foreground)
   
-  return new Promise( (res) => ffmpeg()
+  return new Promise( (res) => {
+    var command = ffmpeg()
     // First input
     .input(background)
-    .setStartTime(start) //Can be in "HH:MM:SS" format also
-    .setDuration(duration)
+
+    if(duration!=null && start!=null)
+      command.setStartTime(start) //Can be in "HH:MM:SS" format also
+             .setDuration(duration);
+    
     // Second input
-    .input(foreground)
+    command.input(foreground)
     // Filters
     .complexFilter(
       [
@@ -36,7 +40,9 @@ function overlayVideos(background, foreground, overlayed, { trim: {start, durati
     })
     .on('end', res)
     .save(overlayed)
-  );
+    
+    return command
+  });
   
 };
 

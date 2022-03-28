@@ -11,10 +11,12 @@ async function query(text, params) {
         const res = await pool.query(text, params);
         // time elapsed since invocation to execution
         const duration = Date.now() - start;
-        console.log(
-            'executed query', 
-            {text: text.split('\n')[0] + (text.split('\n').length>1?'...':''), duration, rows: res.rowCount}
-        );
+        console.log({
+            query: text.split('\n').join(' '),
+            // [text.split('\n')[0] + (text.split('\n').length>1?'...':''), params],
+            params: params,
+            rows: res.rowCount
+        });
         return res;
     } catch (error) {
         console.log('error in query', {text}, 'with parameters', params);

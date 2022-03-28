@@ -74,7 +74,7 @@ function rawVideo(patientId, analysisId, areaCode, extension=null) {
           return f;
       }
     }
-    return null;
+    // return null;
     throw new Error('paths/paths.js: No file Found for ' + fileName + ' in folder ' + folder)
   }
 
